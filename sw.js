@@ -1,4 +1,4 @@
-const CACHE_NAME = 'repertorio-v3'; // <--- A MÁGICA ESTÁ AQUI (Versão 2)
+const CACHE_NAME = 'repertorio-v5'; 
 const urlsToCache = [
   './',
   './index.html',
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// A FAXINA: Apaga a versão v1 antiga do celular da galera
+// A FAXINA: Apaga a versão velha do celular da galera
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
