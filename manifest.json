@@ -1,0 +1,15 @@
+{
+  "name": "Meu Repertório",
+  "short_name": "Repertório",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#8B0000",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1753/1753235.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

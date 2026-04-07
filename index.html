@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    /* =========================================
+       AS CORES E MEDIDAS DO CHEFE
+     ========================================= */
+    :root {
+      --bg-color: #f0f4f8; --text-color: #2d3436; --highlight: #e84118; --wine-red: #8B0000;  
+      
+      /* NOVAS CORES: FOSCAS E ELEGANTES */
+      --btn-normal: rgba(14, 165, 233, 0.08);
+      --text-normal: #042a45; /* FONTE MAIS ESCURA */
+      --border-normal: rgba(14, 165, 233, 0.2);
+      
+      --btn-active: linear-gradient(135deg, #005c97, #003b6f); --shadow-active: 0 4px 12px rgba(0, 92, 151, 0.4);
+      --btn-played: rgba(0,0,0,0.03); --text-played: #94a3b8; --border-played: rgba(0,0,0,0.08);
+      
+      --tamanho-letra: 21px; --tamanho-cifra: 20px;
+    }
+    [data-theme="dark"] {
+      --bg-color: #0f172a; --text-color: #f1f5f9; --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: rgba(255, 255, 255, 0.1);
+      --highlight: #ff4757; --wine-red: #ff6b81; 
+      
+      /* NOVAS CORES ESCURAS: FOSCAS E ELEGANTES */
+      --btn-normal: rgba(14, 165, 233, 0.05);
+      --text-normal: #bae6fd; 
+      --border-normal: rgba(14, 165, 233, 0.15);
+      
+      --btn-active: linear-gradient(135deg, #0ea5e9, #2563eb); --shadow-active: 0 4px 12px rgba(14, 165, 233, 0.4);
+      --btn-played: rgba(255,255,255,0.02); --text-played: #475569; --border-played: rgba(255,255,255,0.05);
+    }
+ 
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.4s ease, color 0.4s ease; }
+    
+    html, body { height: 100%; width: 100%; overflow: hidden; position: fixed; top: 0; left: 0; touch-action: none; background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    .glass { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07); }
+    [data-theme="dark"] .glass { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); }
+ 
+    .sidebar { position: absolute; top: 15px; left: 15px; bottom: 15px; width: 310px; display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; z-index: 10;}
+    .stats-panel { display: flex; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid var(--glass-border); font-size: 10px; font-weight: bold; align-items: center; flex-shrink: 0;}
+    .stat-box { display: flex; align-items: center; justify-content: center; gap: 6px; width: 48%; }
+    .stat-value { font-size: 14px; margin-top: 0; color: var(--highlight); }
+ 
+    .search-area { padding: 10px; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
+    .search-bar { display: flex; align-items: center; background: rgba(0,0,0,0.05); border-radius: 30px; padding: 5px 12px; margin-bottom: 5px; border: 1px solid var(--glass-border); }
+    [data-theme="dark"] .search-bar { background: rgba(255,255,255,0.05); }
+    .search-bar input { background: transparent; border: none; color: var(--text-color); width: 100%; outline: none; font-size: 13px; margin-left: 8px; }
+    .theme-toggle { cursor: pointer; font-size: 18px; user-select: none; }
+    .radio-group { display: flex; justify-content: space-around; font-size: 11px; margin-top: 5px; font-weight: bold; margin-bottom: 0px; }
+    
+    .list-container { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px; -webkit-overflow-scrolling: touch; touch-action: pan-y; will-change: transform; }
+    .list-container::-webkit-scrollbar { width: 8px; }
+    .list-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.03); border-radius: 10px; margin: 4px; }
+    .list-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+ 
+    /* FONTE DAS PASTAS AUMENTADA PARA 16px */
+    .folder { font-weight: bold; padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; background: rgba(0,0,0,0.03); display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 16px; border: 1px solid transparent;}
+    .folder:hover { background: rgba(0,0,0,0.08); border: 1px solid var(--border-normal); }
+    [data-theme="dark"] .folder { background: rgba(255,255,255,0.05); }
+    .sub-folder { margin-left: 15px; border-left: 3px solid rgba(14, 165, 233, 0.3); background: rgba(0,0,0,0.01); }
+ 
+    /* OS NOVOS BOTÕES (Caixa um pouco mais apertada: padding de 8px para 5px) */
+    .song-item { padding: 5px 10px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; background: var(--btn-normal); color: var(--text-normal); border: 1px solid var(--border-normal); transition: filter 0.2s, transform 0.2s; display: flex; align-items: center;}
+    
+    /* LETRA MAIOR E MAIS FORTE */
+    .song-title { font-weight: bold; font-size: 18px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+    
+    .song-item.active { background: var(--btn-active) !important; color: white !important; border: none !important; box-shadow: var(--shadow-active) !important; }
+    .song-item.played { background: var(--btn-played) !important; color: var(--text-played) !important; border: 1px solid var(--border-played) !important; box-shadow: none !important; }
+ 
+    .song-item.medley-main { background: rgba(232, 65, 24, 0.08); border: 1px solid rgba(232, 65, 24, 0.25); border-left: 4px solid var(--highlight); }
+    .song-item.medley-sub { background: rgba(232, 65, 24, 0.03); border: 1px solid rgba(232, 65, 24, 0.15); border-left: 4px solid var(--highlight); margin-left: 15px; border-radius: 0 6px 6px 0; }
+ 
+    /* SERTANEJO FOSCO (Ouro apagadinho) */
+    .song-item.sertanejo-highlight { background: rgba(234, 179, 8, 0.08); border-color: rgba(234, 179, 8, 0.25); color: #854d0e; }
+    [data-theme="dark"] .song-item.sertanejo-highlight { background: rgba(234, 179, 8, 0.05); border-color: rgba(234, 179, 8, 0.15); color: #fef08a; }
+ 
+    .separator-pausa { color: var(--wine-red); font-size: 28px; font-weight: 900; background: rgba(0,0,0,0.05); padding: 2px 10px; border-radius: 6px; margin: 8px 0; text-align: center; text-transform: uppercase; letter-spacing: 2px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); user-select: none; line-height: 1.2; }
+    [data-theme="dark"] .separator-pausa { background: rgba(255,255,255,0.05); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+ 
+    .main-content { position: absolute; top: 15px; left: 340px; right: 15px; bottom: 15px; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; z-index: 5;}
+    .song-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; min-height: 55px; border-bottom: 2px solid var(--wine-red); flex-shrink: 0; margin: 0 10px; gap: 15px;}
+    
+    .title-wrapper { display: flex; align-items: center; flex: 1; min-width: 0; gap: 10px; }
+    .header-title { color: var(--wine-red); font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .header-controls { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+    .control-group { display: flex; align-items: center; background: rgba(0,0,0,0.05); border-radius: 30px; padding: 3px 12px; font-size: 11px; font-weight: bold; border: 1px solid var(--glass-border); }
+    [data-theme="dark"] .control-group { background: rgba(255,255,255,0.05); }
+    .control-btn { background: var(--btn-active); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; cursor: pointer; margin: 0 4px; user-select: none; display:flex; justify-content:center; align-items:center; }
+    .control-btn:active { transform: scale(0.9); }
+    .clock { font-size: 18px; font-weight: bold; margin-left: 8px; color: var(--wine-red); font-family: monospace;}
+ 
+    .lyrics-area { flex: 1; min-height: 0; padding: 20px 40px; overflow-y: auto; overflow-x: hidden; text-align: center; font-family: 'Verdana', 'Tahoma', sans-serif; font-size: var(--tamanho-letra); line-height: 1.2; font-weight: 500; white-space: pre-wrap; -webkit-overflow-scrolling: touch; touch-action: pan-y; will-change: transform; }
+    .lyrics-area * { font-family: inherit; } 
+    .chord { color: var(--highlight); font-weight: normal; font-size: var(--tamanho-cifra); display: inline-block; margin-top: 0px; margin-bottom: 0px; }
+    .loading { text-align: center; padding: 20px; color: var(--wine-red); font-weight: bold; }
+ 
+    @media (max-width: 768px) {
+      .sidebar { top: 0; left: 0; right: 0; bottom: 0; width: 100%; border-radius: 0; border: none; margin: 0; }
+      .main-content { top: 0; left: 0; right: 0; bottom: 0; width: 100%; border-radius: 0; border: none; margin: 0; display: none; z-index: 20; }
+      
+      .song-header { flex-direction: column; align-items: flex-start; padding: 10px 15px; height: auto; min-height: auto; gap: 10px; }
+      .title-wrapper { align-items: flex-start; width: 100%; }
+      .header-title { white-space: normal; line-height: 1.2; font-size: 22px; overflow: visible; margin-right: 0;}
+      .header-controls { width: 100%; justify-content: space-between; gap: 5px;}
+      
+      .lyrics-area { padding: 15px 10px; }
+      .control-group { padding: 3px 6px; font-size: 10px; }
+      .clock { font-size: 14px; margin-left: 2px; }
+      .control-btn { width: 22px; height: 22px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+ 
+  <div class="sidebar glass" id="painel-sidebar">
+    <div class="stats-panel">
+      <div class="stat-box" ondblclick="zerarContador()" style="cursor: pointer;" title="Duplo clique para zerar!">SELECIONADAS: <div class="stat-value" id="contador-tocadas">0</div></div>
+      <div class="stat-box">TOTAL: <div class="stat-value" id="total-musicas">...</div></div>
+    </div>
+    <div class="search-area">
+      <div class="search-bar">
+        <span>🎵</span><input type="text" id="input-busca-musica" placeholder="Buscar música ou letra..." onkeyup="buscarMusicas(event)">
+        <span class="theme-toggle" onclick="toggleFullScreen()" title="Tela Cheia" style="margin-right: 12px; font-size: 16px;">🔲</span>
+        <span class="theme-toggle" onclick="toggleTheme()" title="Mudar Tema">🌓</span>
+      </div>
+      <div class="radio-group">
+        <label><input type="radio" name="searchType" value="nome" checked onchange="buscarMusicas(null)"> Nome/Cantor</label>
+        <label><input type="radio" name="searchType" value="letra" onchange="buscarMusicas(null)"> Letra</label>
+      </div>
+      <div class="search-bar" style="margin-bottom: 0;">
+        <span>📁</span><input type="text" id="input-busca-pasta" placeholder="Buscar pasta (Ex: Base, Cantores)..." onkeyup="buscarPastas(event)">
+      </div>
+    </div>
+    <div class="list-container" id="lista-menu"><div class="loading">⏳ Carregando cofre e repertório...</div></div>
+  </div>
+ 
+  <div class="main-content glass" id="painel-principal">
+    <div class="song-header">
+      <div class="title-wrapper">
+        <div class="header-title" id="titulo-tela">SELECIONE UMA MÚSICA</div>
+      </div>
+      <div class="header-controls">
+        <div class="control-group">
+          TOM <button class="control-btn" onclick="mudarTom(-1)">-</button> <span id="visor-tom" onclick="resetarTom()" style="margin: 0 3px; min-width: 15px; text-align: center; cursor: pointer; display: inline-block; padding: 2px 2px; border-radius: 4px;" title="Clique para voltar ao original">-</span> <button class="control-btn" onclick="mudarTom(1)">+</button>
+        </div>
+        <div class="control-group">
+          ZOOM <button class="control-btn" onclick="mudarZoom(-1)" title="Diminuir Letra">-</button><button class="control-btn" onclick="mudarZoom(1)" title="Aumentar Letra">+</button>
+        </div>
+        <button class="control-btn" onclick="toggleFullScreen()" title="Tela Cheia" style="width: auto; padding: 0 6px; font-size: 14px; background: transparent; border: 1px solid var(--glass-border);">🔲</button>
+        <div class="clock" id="relogio">00:00</div>
+      </div>
+    </div>
+    <div class="lyrics-area" id="letra-tela">Seu repertório está sendo carregado da planilha...</div>
+  </div>
+ 
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxOXROEaatndvE2qbDo4L_vdt3v4y_7alRSDpmiQT-wl7-57oNITx89YBny44ImRsFXkQ/exec";
+
+    let wakeLock = null;
+    async function travarTelaAcesa() {
+      try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
+      catch (err) { console.log(`Não travou a tela: ${err.message}`); }
+    }
+    document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') travarTelaAcesa(); });
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e=>console.log(e)); } 
+      else { if (document.exitFullscreen) document.exitFullscreen(); }
+    }
+
+    let visaoMobileAtiva = false;
+    window.addEventListener('popstate', function(e) {
+      if (window.innerWidth <= 768 && visaoMobileAtiva) {
+        document.getElementById('painel-sidebar').style.display = 'flex';
+        document.getElementById('painel-principal').style.display = 'none';
+        visaoMobileAtiva = false;
+      }
+    });
+
+    setInterval(() => {
+      let data = new Date(); let horas = data.getHours().toString().padStart(2, '0'); let minutos = data.getMinutes().toString().padStart(2, '0');
+      document.getElementById('relogio').innerText = `${horas}:${minutos}`;
+    }, 1000);
+
+    function toggleTheme() {
+      const html = document.documentElement; if (html.getAttribute('data-theme') === 'dark') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', 'dark');
+    }
+    function normalizarTexto(texto) { if (!texto) return ""; return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+
+    let passosDeZoom = 0; 
+    function mudarZoom(direcao) {
+      passosDeZoom += direcao;
+      let novoTamanhoLetra = 21 + (passosDeZoom * 2); let novoTamanhoCifra = 20 + (passosDeZoom * 2);
+      if (novoTamanhoLetra < 12) { passosDeZoom++; return; } if (novoTamanhoLetra > 60) { passosDeZoom--; return; } 
+      document.documentElement.style.setProperty('--tamanho-letra', novoTamanhoLetra + 'px');
+      document.documentElement.style.setProperty('--tamanho-cifra', novoTamanhoCifra + 'px');
+    }
+
+    let repertorioCompleto = []; let pastasDisponiveis = []; let cantoresDisponiveis = []; 
+    let pastaAtual = ''; let subPastaAtual = ''; let contadorTocadas = 0; let emBusca = false; let memoriaMenu = { pasta: '', subPasta: '', scroll: 0 };
+    let sequenciaAtual = []; let ordensSalvas = {}; let musicaAtualId = null; let offsetTom = 0; 
+    const notasSustenido = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; const notasBemol = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+    function transporNota(nota, offset) {
+      let index = notasSustenido.indexOf(nota); if (index === -1) index = notasBemol.indexOf(nota); if (index === -1) return nota; 
+      let novoIndex = (index + offset) % 12; if (novoIndex < 0) novoIndex += 12; return notasSustenido[novoIndex]; 
+    }
+
+    function mudarTom(direcao) { if (musicaAtualId === null) return; offsetTom += direcao; aplicarTransposicaoETela(); }
+    function resetarTom() { if (musicaAtualId === null) return; offsetTom = 0; aplicarTransposicaoETela(); }
+
+    function aplicarTransposicaoETela() {
+      const musicaSelecionada = repertorioCompleto[musicaAtualId];
+      let scrollAtual = document.getElementById('letra-tela').scrollTop;
+      document.getElementById('letra-tela').innerHTML = formatarLetra(musicaSelecionada.letra); document.getElementById('letra-tela').scrollTop = scrollAtual;
+      let tomLimpo = (musicaSelecionada.tom || '').replace(/,/g, '').trim(); let novoTomVisor = '';
+      if (tomLimpo && tomLimpo !== "Pausa" && tomLimpo !== "") {
+         novoTomVisor = tomLimpo.replace(/(^|\s|\/|\(|>)([A-G][#b]?)/g, function(match, prefixo, nota) { return prefixo + transporNota(nota, offsetTom); });
+      } else { novoTomVisor = offsetTom > 0 ? "+" + offsetTom : (offsetTom === 0 ? "-" : offsetTom); }
+      let visor = document.getElementById('visor-tom'); visor.innerText = novoTomVisor;
+      visor.style.backgroundColor = "rgba(0,0,0,0.1)"; setTimeout(() => { visor.style.backgroundColor = "transparent"; }, 150);
+    }
+
+    window.onload = async function() {
+      history.replaceState({tela: 'menu'}, '', window.location.href);
+      
+      // Instala o Motor Offline
+      if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').then(() => console.log("Motor Offline Pronto!")); }
+
+      try {
+        let response = await fetch(API_URL);
+        let dados = await response.json();
+        ordensSalvas = dados.ordens;
+        
+        // Salva a cópia invisível no tablet
+        localStorage.setItem('repertorio_backup', JSON.stringify(dados));
+        iniciarAplicativo(dados.musicas);
+      } catch (e) {
+        console.log("Sem internet! Usando cofre offline...");
+        let memoria = localStorage.getItem('repertorio_backup');
+        if (memoria) {
+          let dados = JSON.parse(memoria);
+          ordensSalvas = dados.ordens;
+          iniciarAplicativo(dados.musicas);
+        } else {
+          document.getElementById('lista-menu').innerHTML = "<div class='loading'>Sem internet e nenhum backup salvo. Conecte-se pelo menos uma vez!</div>";
+        }
+      }
+    };
+
+    function iniciarAplicativo(musicas) {
+      repertorioCompleto = musicas.map((m, index) => { m.idReal = index; return m; });
+      document.getElementById('total-musicas').innerText = repertorioCompleto.length;
+      let setPastas = new Set(); let setCantores = new Set();
+      repertorioCompleto.forEach(m => {
+        if(m.estilos) m.estilos.split(',').forEach(e => setPastas.add(e.trim()));
+        if(m.artista) m.artista.split(',').forEach(a => setCantores.add(a.trim()));
+      });
+      cantoresDisponiveis = Array.from(setCantores).filter(c => c !== '').sort();
+      let cantoresNorm = cantoresDisponiveis.map(c => normalizarTexto(c));
+      let estilosBrutos = Array.from(setPastas).filter(p => p !== '');
+      pastasDisponiveis = estilosBrutos.filter(p => {
+         let pNorm = normalizarTexto(p); let isCantor = cantoresNorm.includes(pNorm);
+         return !isCantor && pNorm !== 'base' && pNorm !== 'cantores';
+      }).sort();
+      pastasDisponiveis.push('CANTORES'); pastasDisponiveis.unshift('BASE'); 
+      renderizarMenuVisaoPasta();
+      travarTelaAcesa();
+    }
+
+    function togglePasta(nomePasta) {
+      if (pastaAtual === nomePasta) { pastaAtual = ''; subPastaAtual = ''; } else { pastaAtual = nomePasta; subPastaAtual = ''; }
+      renderizarMenuVisaoPasta();
+    }
+    function toggleSubPasta(nomeCantor) {
+      if (subPastaAtual === nomeCantor) subPastaAtual = ''; else subPastaAtual = nomeCantor;
+      renderizarMenuVisaoPasta();
+    }
+
+    function renderizarItemMusica(musica, isBusca = false, isMedleySub = false, isMedleyMain = false) {
+      let ehPausa = (musica.tom && musica.tom.toUpperCase() === 'PAUSA');
+      if (ehPausa) { return `<div class="separator-pausa">${musica.titulo}</div>`; }
+      if (!isBusca || emBusca) { sequenciaAtual.push(musica.idReal); }
+      let classes = 'song-item';
+      if(musica.tocada) classes += ' played';
+      if(musica.ativaNaTela && !isBusca) classes += ' active';
+      if (!isBusca) { if (isMedleyMain) classes += ' medley-main'; else if (isMedleySub) classes += ' medley-sub'; }
+      if (pastaAtual === 'BASE' && !isBusca && musica.estilos && musica.estilos.toUpperCase().includes('SERTANEJO')) {
+        if (!musica.tocada && !musica.ativaNaTela) { classes += ' sertanejo-highlight'; }
+      }
+      return `<div class="${classes}" onclick="mostrarLetra(${musica.idReal}, ${isBusca})"><div class="song-title">${musica.titulo}</div></div>`;
+    }
+
+    function renderizarMenuVisaoPasta() {
+      sequenciaAtual = []; const listaMenu = document.getElementById('lista-menu'); let htmlLista = '';
+      pastasDisponiveis.forEach(pasta => {
+        let icone = (pasta === pastaAtual) ? '📂' : '📁';
+        let corDestaque = (pasta === pastaAtual) ? 'background: rgba(0,0,0,0.08); border-color: var(--border-normal);' : '';
+        let idPastaScroll = 'pasta-' + pasta.replace(/\s+/g, '-'); 
+        htmlLista += `<div class="folder" id="${idPastaScroll}" style="${corDestaque}" onclick="togglePasta('${pasta}')">${icone} ${pasta}</div>`;
+        if (pasta === pastaAtual) {
+          if (pasta === 'CANTORES') {
+            cantoresDisponiveis.forEach(cantor => {
+              let iconeCantor = (cantor === subPastaAtual) ? '📖' : '👤';
+              let idSubScroll = 'pasta-' + cantor.replace(/\s+/g, '-');
+              htmlLista += `<div class="folder sub-folder" id="${idSubScroll}" onclick="toggleSubPasta('${cantor}')">${iconeCantor} ${cantor}</div>`;
+              if (cantor === subPastaAtual) {
+                let musicasCantor = repertorioCompleto.filter(m => m.artista && m.artista.toUpperCase().includes(cantor.toUpperCase()));
+                musicasCantor.forEach(m => htmlLista += renderizarItemMusica(m, false, false, false));
+              }
+            });
+          } else {
+            let musicasDaPasta = repertorioCompleto.filter(m => m.estilos && normalizarTexto(m.estilos).includes(normalizarTexto(pastaAtual)));
+            let ordemNoCofre = ordensSalvas[pastaAtual];
+            if (ordemNoCofre) {
+              let idsSalvos = ordemNoCofre.split(','); let idsJaRenderizados = new Set();
+              for (let i = 0; i < idsSalvos.length; i++) {
+                let str = idsSalvos[i].trim(); let isMedleySub = str.startsWith('+'); if (isMedleySub) str = str.substring(1);
+                let isMedleyMain = false; if (i + 1 < idsSalvos.length) { let nextStr = idsSalvos[i+1].trim(); if (nextStr.startsWith('+') && !isMedleySub) { isMedleyMain = true; } }
+                try {
+                  let decodificado = decodeURIComponent(str).split("|||"); let t = decodificado[0]; let a = decodificado[1] || '';
+                  let m = repertorioCompleto.find(mus => mus.titulo === t && (mus.artista || '') === a);
+                  if (m) {
+                    let ehPausa = (m.tom && m.tom.toUpperCase() === 'PAUSA');
+                    if (ehPausa) { htmlLista += renderizarItemMusica(m, false, false, false); } else { htmlLista += renderizarItemMusica(m, false, isMedleySub, isMedleyMain); }
+                    idsJaRenderizados.add(m.linhaPlanilha);
+                  }
+                } catch(e) {}
+              }
+              musicasDaPasta.forEach(m => { if (!idsJaRenderizados.has(m.linhaPlanilha)) { htmlLista += renderizarItemMusica(m, false, false, false); } });
+            } else { musicasDaPasta.forEach(m => htmlLista += renderizarItemMusica(m, false, false, false)); }
+          }
+        }
+      });
+      listaMenu.innerHTML = htmlLista;
+    }
+
+    function buscarMusicas(event) {
+      if(event && event.key === 'Enter') { let p = document.querySelector('#lista-menu .song-item:not(.separator-pausa)'); if(p) p.click(); return; }
+      let input = document.getElementById('input-busca-musica').value; let termo = normalizarTexto(input);
+      let tipoBusca = document.querySelector('input[name="searchType"]:checked').value; const listaMenu = document.getElementById('lista-menu');
+      if(termo === '') { emBusca = false; pastaAtual = memoriaMenu.pasta; subPastaAtual = memoriaMenu.subPasta; renderizarMenuVisaoPasta(); setTimeout(() => { listaMenu.scrollTop = memoriaMenu.scroll; }, 10); return; }
+      if(!emBusca) { emBusca = true; memoriaMenu.pasta = pastaAtual; memoriaMenu.subPasta = subPastaAtual; memoriaMenu.scroll = listaMenu.scrollTop; }
+      sequenciaAtual = []; 
+      let resultados = repertorioCompleto.filter(m => {
+        if(m.tom && m.tom.toUpperCase() === 'PAUSA') return false; 
+        if(tipoBusca === 'nome') return normalizarTexto(m.titulo).includes(termo) || normalizarTexto(m.artista).includes(termo);
+        else return normalizarTexto(m.letra).includes(termo);
+      });
+      resultados.sort((a, b) => {
+        let tA = normalizarTexto(a.titulo); let tB = normalizarTexto(b.titulo);
+        let cA = tA.startsWith(termo) ? -1 : 1; let cB = tB.startsWith(termo) ? -1 : 1;
+        if(cA !== cB) return cA - cB; return tA.localeCompare(tB);
+      });
+      let htmlLista = `<div style="font-size: 11px; padding: 5px; color: var(--wine-red);">Resultados:</div>`;
+      resultados.forEach(m => htmlLista += renderizarItemMusica(m, true, false, false));
+      listaMenu.innerHTML = htmlLista;
+    }
+
+    function buscarPastas(event) {
+      if(event && event.key === 'Enter') { let p = document.querySelector('#lista-menu .folder'); if(p) p.click(); return; }
+      let termo = normalizarTexto(document.getElementById('input-busca-pasta').value); let listaMenu = document.getElementById('lista-menu');
+      if(termo === '') { renderizarMenuVisaoPasta(); return; }
+      let htmlLista = '';
+      pastasDisponiveis.forEach(pasta => { if(normalizarTexto(pasta).includes(termo)) htmlLista += `<div class="folder" onclick="abrirPastaRolandoTopo('${pasta}')">📁 ${pasta}</div>`; });
+      cantoresDisponiveis.forEach(cantor => { if(normalizarTexto(cantor).includes(termo)) htmlLista += `<div class="folder sub-folder" onclick="abrirPastaRolandoTopo('CANTORES', '${cantor}')">👤 ${cantor}</div>`; });
+      listaMenu.innerHTML = htmlLista;
+    }
+
+    function abrirPastaRolandoTopo(pastaPrincipal, cantor = null) {
+      document.getElementById('input-busca-pasta').value = ''; pastaAtual = pastaPrincipal; subPastaAtual = cantor ? cantor : ''; renderizarMenuVisaoPasta();
+      setTimeout(() => { let idAlvo = cantor ? 'pasta-' + cantor.replace(/\s+/g, '-') : 'pasta-' + pastaPrincipal.replace(/\s+/g, '-'); let el = document.getElementById(idAlvo); if(el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+    }
+
+    function formatarLetra(textoRaw) {
+      if (!textoRaw) return '';
+      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>').replace(/\[([\s\S]*?)\]/g, '<em>$1</em>').replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
+      let linhas = texto.split('\n'); let htmlFinal = '';
+      linhas.forEach(linha => {
+        let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, ''); let linhaSemTags = linha.replace(/<[^>]*>/g, '').trim();
+        let contemLetrasDeTexto = /[HKLNOPQRTUVWXYZ]/i.test(linhaSemTags); let ehCifra = forcadoCifra || (linhaSemTags.length > 0 && linhaSemTags.length < 60 && !contemLetrasDeTexto);
+        if (ehCifra) {
+          let linhaTransposta = linha;
+          if (offsetTom !== 0) { linhaTransposta = linhaTransposta.replace(/(^|\s|\/|\(|>)([A-G][#b]?)/g, function(match, prefixo, nota) { return prefixo + transporNota(nota, offsetTom); }); }
+          htmlFinal += '<span class="chord">' + linhaTransposta + '</span><br>';
+        } else { htmlFinal += linha + '<br>'; }
+      });
+      return htmlFinal;
+    }
+
+    function mostrarLetra(idReal, veioDaBusca = false) {
+      const musicaSelecionada = repertorioCompleto[idReal]; musicaAtualId = idReal; offsetTom = 0; 
+      travarTelaAcesa();
+      if (window.innerWidth <= 768) {
+        document.getElementById('painel-sidebar').style.display = 'none'; document.getElementById('painel-principal').style.display = 'flex';
+        if (!visaoMobileAtiva) { history.pushState({tela: 'musica'}, '', window.location.href); visaoMobileAtiva = true; }
+      }
+      let tomLimpo = (musicaSelecionada.tom || '-').replace(/,/g, '').trim(); document.getElementById('visor-tom').innerText = tomLimpo || '-';
+      passosDeZoom = 0; document.documentElement.style.setProperty('--tamanho-letra', '21px'); document.documentElement.style.setProperty('--tamanho-cifra', '20px');
+      repertorioCompleto.forEach(m => m.ativaNaTela = false); musicaSelecionada.ativaNaTela = true;
+      if(!musicaSelecionada.tocada) { musicaSelecionada.tocada = true; contadorTocadas++; document.getElementById('contador-tocadas').innerText = contadorTocadas; }
+      document.getElementById('titulo-tela').innerText = musicaSelecionada.titulo;
+      document.getElementById('letra-tela').innerHTML = formatarLetra(musicaSelecionada.letra); document.getElementById('letra-tela').scrollTop = 0;
+      if(veioDaBusca) {
+        document.getElementById('input-busca-musica').value = ''; emBusca = false; pastaAtual = memoriaMenu.pasta; subPastaAtual = memoriaMenu.subPasta;
+        renderizarMenuVisaoPasta(); setTimeout(() => { document.getElementById('lista-menu').scrollTop = memoriaMenu.scroll; }, 10);
+      } else { renderizarMenuVisaoPasta(); }
+      if(document.activeElement) document.activeElement.blur();
+    }
+
+    let touchStartX = 0; let touchStartY = 0; let touchEndX = 0; let touchEndY = 0;
+    const mainContent = document.getElementById('painel-principal');
+    mainContent.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, {passive: true});
+    mainContent.addEventListener('touchend', e => { 
+        touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY;
+        let deltaX = touchEndX - touchStartX; let deltaY = touchEndY - touchStartY;
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+            if (deltaX < 0) navegarSwipe(1); 
+            if (deltaX > 0) navegarSwipe(-1); 
+        }
+    }, {passive: true});
+
+    function navegarSwipe(direcao) {
+        if (musicaAtualId === null || sequenciaAtual.length === 0) return;
+        let indexAtual = sequenciaAtual.indexOf(musicaAtualId);
+        if (indexAtual !== -1) {
+            let novoIndex = indexAtual + direcao;
+            if (novoIndex >= 0 && novoIndex < sequenciaAtual.length) { mostrarLetra(sequenciaAtual[novoIndex], false); }
+        }
+    }
+
+    function zerarContador() { contadorTocadas = 0; document.getElementById('contador-tocadas').innerText = contadorTocadas; repertorioCompleto.forEach(m => m.tocada = false); renderizarMenuVisaoPasta(); }
+
+    document.addEventListener('keydown', function(e) {
+      if (document.activeElement.tagName === 'INPUT') return;
+      const listaMenu = document.getElementById('lista-menu'); const vel = 60; 
+      if (e.key === 'ArrowDown') { listaMenu.scrollTop += vel; e.preventDefault(); } else if (e.key === 'ArrowUp') { listaMenu.scrollTop -= vel; e.preventDefault(); } 
+      else if (e.key === 'PageDown') { listaMenu.scrollTop += listaMenu.clientHeight; e.preventDefault(); } else if (e.key === 'PageUp') { listaMenu.scrollTop -= listaMenu.clientHeight; e.preventDefault(); }
+    });
+  </script>
+</body>
+</html>

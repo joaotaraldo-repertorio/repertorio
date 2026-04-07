@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <style>
+    :root {
+      --bg-color: #f0f4f8; --text-color: #2d3436; --highlight: #e84118; --wine-red: #8B0000;  
+      --tamanho-letra: 21px; --tamanho-cifra: 20px;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e2e8f0; color: #1e293b; margin: 0; padding: 15px 20px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; box-sizing: border-box;}
+    
+    .cabecalho { display: flex; justify-content: space-between; align-items: center; color: var(--wine-red); margin: 0 0 15px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px; flex-shrink: 0;}
+    .titulo-principal { font-weight: 900; letter-spacing: 1px; font-size: 20px; margin: 0; display: flex; align-items: center; gap: 15px;}
+    
+    .seletor-abas { display: flex; background: #cbd5e1; border-radius: 8px; padding: 4px; }
+    .aba { border: none; background: transparent; padding: 6px 15px; font-size: 13px; font-weight: bold; color: #475569; border-radius: 6px; cursor: pointer; transition: 0.2s;}
+    .aba.ativa { background: white; color: #0ea5e9; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+ 
+    .grupo-botoes-topo { display: flex; gap: 8px; align-items: center;}
+    .btn-acao { border: none; padding: 8px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+    .btn-acao:hover { filter: brightness(0.9); transform: translateY(-1px);}
+    .btn-cancelar { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; box-shadow: none;}
+    .btn-excluir { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; border: 1px solid #e2e8f0;} 
+    .btn-excluir.ativo { background: #ef4444; color: white; cursor: pointer; border: none;}
+    .btn-salvar { background: #10b981; color: white; padding: 8px 25px; font-size: 14px;} 
+    .btn-salvar.modo-edicao { background: #0ea5e9; } 
+    
+    .controle-largura { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #475569; margin-right: 15px;}
+    .controle-largura input[type="range"] { width: 100px; cursor: pointer; }
+ 
+    .mensagem { font-weight: bold; color: #10b981; display: none; position: absolute; right: 20px; top: 70px; background: white; padding: 12px 25px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 1000; border-left: 4px solid #10b981;}
+ 
+    /* TELA 1: EDITOR */
+    #tela-editor { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+    .barra-busca-editor { background: #0f172a; padding: 10px 15px; border-radius: 8px; margin-bottom: 12px; display: flex; gap: 15px; align-items: center; position: relative; flex-shrink: 0;}
+    .barra-busca-editor label { color: #cbd5e1; margin: 0; font-size: 13px;}
+    .barra-busca-editor input { flex: 1; padding: 8px 15px; border-radius: 30px; border: none; font-size: 14px; outline: none; }
+    .caixa-sugestoes-busca { position: absolute; top: 100%; left: 120px; right: 15px; background: white; border-radius: 0 0 8px 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 200; display: none; max-height: 250px; overflow-y: auto; margin-top: 2px; }
+    
+    .painel-topo { background: white; padding: 12px 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 12px; display: grid; grid-template-columns: 2fr 1fr 2fr 2fr; gap: 15px; flex-shrink: 0;}
+    .grupo-form { display: flex; flex-direction: column; position: relative; } 
+    label { font-weight: bold; margin-bottom: 3px; font-size: 11px; color: #475569; }
+    input[type="text"] { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: bold; outline: none; transition: 0.3s; color: #0f172a;}
+    input[type="text"]:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2); }
+    
+    .caixa-sugestoes { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; box-shadow: 0 8px 15px rgba(0,0,0,0.1); z-index: 100; display: none; max-height: 150px; overflow-y: auto; margin-top: 2px; }
+    .sugestao-item { padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
+    .sugestao-item:hover, .sugestao-item.selecionado { background: #e0f2fe; color: #0369a1; font-weight: bold;}
+    
+    .editor-container { display: flex; gap: 15px; flex-grow: 1; overflow: hidden; }
+    .lado-esquerdo { flex: 1; display: flex; flex-direction: column; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .barra-ferramentas { background: #f8fafc; padding: 8px 12px; display: flex; gap: 6px; border-bottom: 1px solid #e2e8f0; align-items: center; flex-wrap: wrap; flex-shrink: 0;}
+    .btn-format { background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; font-weight: bold; cursor: pointer; color: #334155; font-size: 12px; transition: 0.2s;}
+    .btn-format:hover { background: #e2e8f0; }
+    .btn-format.btn-red { color: var(--highlight); }
+    textarea { flex-grow: 1; padding: 15px; border: none; resize: none; outline: none; font-family: 'Verdana', 'Tahoma', sans-serif; font-size: 15px; line-height: 1.3; white-space: pre-wrap; }
+    
+    .lado-direito { flex: 1; background: #1e293b; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .titulo-preview { text-align: center; background: #0f172a; padding: 8px; font-size: 11px; font-weight: bold; color: #94a3b8; letter-spacing: 2px; flex-shrink: 0;}
+    .area-scroll-tablet { flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+    .wrapper-escala { transform: scale(0.5); transform-origin: top center; display: flex; justify-content: center; }
+    .tablet-virtual { width: 900px; min-height: 800px; background: var(--bg-color); border-radius: 10px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; font-family: 'Verdana', 'Tahoma', sans-serif; font-size: var(--tamanho-letra); line-height: 1.2; font-weight: 500; white-space: pre-wrap; color: var(--text-color); }
+    .tablet-virtual * { font-family: inherit; } 
+    .chord-preview { color: var(--highlight); font-weight: normal; font-size: var(--tamanho-cifra); display: inline-block; margin-top: 0px; margin-bottom: 0px; }
+    
+    /* TELA 2: ORGANIZADOR DE PASTAS COM 3 COLUNAS */
+    #tela-organizador { display: none; flex-direction: row; gap: 15px; flex-grow: 1; overflow: hidden; padding-top: 5px;}
+    .coluna-org { display: flex; flex-direction: column; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden;}
+    .col-acervo { flex: 1; }
+    
+    /* A COLUNA DO BOTÃO DE TRANSFERÊNCIA EM LOTE */
+    .coluna-meio { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 60px; flex-shrink: 0;}
+    .btn-mover-massa { background: #10b981; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: 0.2s; display: flex; align-items: center; justify-content: center;}
+    .btn-mover-massa:hover { transform: scale(1.1); background: #059669; }
+ 
+    .col-alvo { flex: 1; border: 2px solid #0ea5e9;}
+    .header-org { background: #f8fafc; padding: 15px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;}
+    .header-org h3 { margin: 0; font-size: 15px; color: #0f172a; display: flex; justify-content: space-between; align-items: center;}
+    .input-busca-pasta-alvo { padding: 8px 12px; border-radius: 6px; border: 1px solid #0ea5e9; font-weight: bold; color: #0ea5e9; font-size: 14px; outline: none; background: #f0f9ff; width: 100%; box-sizing: border-box;}
+    .input-busca-pasta-alvo::placeholder { color: #7dd3fc; font-weight: normal; }
+    .btn-salvar-ordem { background: #0ea5e9; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+    .btn-salvar-ordem:hover { background: #0284c7; }
+ 
+    .area-drag { flex-grow: 1; overflow-y: auto; padding: 10px; background: #f1f5f9; position: relative;}
+    
+    .item-drag { background: white; border: 1px solid #cbd5e1; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.02); font-weight: bold; font-size: 14px; color: #334155; transition: opacity 0.2s, transform 0.2s;}
+    .item-drag.dragging { opacity: 0.5; transform: scale(0.98); } 
+    .item-drag .cantor { font-size: 11px; color: #94a3b8; font-weight: normal;}
+    
+    .item-drag.tipo-pausa { background: #fdf4ff; border-color: #d8b4fe; color: #9333ea; justify-content: center; letter-spacing: 2px;}
+    .item-drag.tipo-pausa .cantor { display: none; }
+    .drag-placeholder { height: 42px; border: 2px dashed #0ea5e9; border-radius: 6px; margin-bottom: 8px; background: rgba(14, 165, 233, 0.05); transition: all 0.2s ease;}
+    
+    .btn-remover-medley { cursor: pointer; color: #ef4444; font-weight: 900; padding: 0 5px; font-size: 16px; transition: 0.2s; user-select: none;}
+    .btn-remover-medley:hover { color: #b91c1c; transform: scale(1.2); }
+    
+    .btn-link-medley { cursor: pointer; color: #cbd5e1; font-size: 16px; margin-right: 5px; transition: 0.2s; user-select: none;}
+    .item-drag.is-medley { border-left: 4px solid var(--highlight); background: #fff5f5; margin-left: 15px;}
+    .item-drag.is-medley .btn-link-medley { color: var(--highlight); transform: scale(1.1);}
+ 
+  </style>
+</head>
+<body>
+ 
+  <div class="cabecalho">
+    <h1 class="titulo-principal">
+      <span id="titulo-pagina">⚙️ BASTIDORES</span>
+      <div class="seletor-abas">
+        <button class="aba ativa" id="aba-editor" onclick="alternarTela('editor')">✏️ MODO EDITOR</button>
+        <button class="aba" id="aba-org" onclick="alternarTela('organizador')">🔗 ORGANIZAR PASTAS</button>
+      </div>
+    </h1>
+    
+    <div class="grupo-botoes-topo">
+      <div class="controle-largura" id="area-regua" title="Ajuste do Tablet">
+        Largura: <input type="range" id="sliderLargura" min="600" max="1400" value="900" oninput="ajustarLarguraTablet(this.value)"> <span id="valorLargura">900px</span>
+      </div>
+      <div id="botoes-editor" style="display: flex; gap: 8px;">
+        <button class="btn-acao btn-cancelar" onclick="cancelarEdicao()">🧹 LIMPAR</button>
+        <button class="btn-acao btn-excluir" id="btnExcluir" onclick="deletarMusicaAtual()" disabled>🗑️ EXCLUIR</button>
+        <button class="btn-acao btn-salvar" id="btnSalvar" onclick="salvarOuAtualizar()">➕ SALVAR MÚSICA</button>
+      </div>
+      <div id="botoes-org" style="display: none; gap: 8px;">
+        <button class="btn-salvar-ordem" onclick="salvarOrdemDaPastaAtual()">💾 SALVAR ORDEM DA PASTA</button>
+      </div>
+    </div>
+  </div>
+  <div class="mensagem" id="msgSucesso">✅ Operação realizada com sucesso!</div>
+ 
+  <div id="tela-editor">
+    <div class="barra-busca-editor">
+      <label>🔍 Buscar para Editar:</label>
+      <input type="text" id="busca-geral" placeholder="Digite o nome da música ou cantor..." onkeyup="buscarMusicaParaEditar(event)" autocomplete="off">
+      <div class="caixa-sugestoes-busca" id="sugestoes-busca"></div>
+    </div>
+    <div class="painel-topo">
+      <div class="grupo-form"><label>TÍTULO DA MÚSICA</label><input type="text" id="titulo" autocomplete="off"></div>
+      <div class="grupo-form"><label>TOM</label><input type="text" id="tom" autocomplete="off" onkeyup="verificarAutocomplete(event, 'tom')"><div class="caixa-sugestoes" id="sugestoes-tom"></div></div>
+      <div class="grupo-form"><label>CANTOR(ES)</label><input type="text" id="artista" autocomplete="off" onkeyup="verificarAutocomplete(event, 'artista')"><div class="caixa-sugestoes" id="sugestoes-artista"></div></div>
+      <div class="grupo-form"><label>ESTILO / PASTAS</label><input type="text" id="estilos" autocomplete="off" onkeyup="verificarAutocomplete(event, 'estilos')"><div class="caixa-sugestoes" id="sugestoes-estilos"></div></div>
+    </div>
+    <div class="editor-container">
+      <div class="lado-esquerdo">
+        <div class="barra-ferramentas">
+          <button class="btn-format" onclick="toggleFormatoLinhas('(', ')')" title="Negrito (Liga/Desliga)">( B ) Negrito</button>
+          <button class="btn-format" onclick="toggleFormatoLinhas('[', ']')" title="Itálico (Liga/Desliga)">[ I ] Itálico</button>
+          <button class="btn-format btn-red" onclick="toggleFormatoLinhas('“', '”')" title="Vermelho (Liga/Desliga)">" Cor " Vermelho</button>
+          <div style="width: 2px; background: #cbd5e1; margin: 0 5px; height: 20px;"></div>
+          <button class="btn-format" onclick="toggleCifraLinhas()" title="Cifra (Liga/Desliga)">&lt;c&gt; Cifra</button>
+        </div>
+        <textarea id="letra" placeholder="Cole a letra e as cifras brutas da internet aqui..." oninput="atualizarPreview()"></textarea>
+      </div>
+      <div class="lado-direito">
+        <div class="titulo-preview">👁️ VISUALIZAÇÃO FIEL (Ajuste a régua acima se necessário)</div>
+        <div class="area-scroll-tablet">
+          <div class="wrapper-escala"><div class="tablet-virtual" id="preview">Sua música formatada aparecerá aqui...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <div id="tela-organizador">
+    <div class="coluna-org col-acervo">
+      <div class="header-org">
+        <h3>📚 ACERVO (Dicionário)</h3>
+        <input type="text" id="busca-org" placeholder="Filtrar músicas do acervo..." style="padding: 8px; border:1px solid #cbd5e1; border-radius: 6px; outline: none; width: 100%; box-sizing: border-box;" onkeyup="filtrarAcervoOrg()">
+      </div>
+      <div class="area-drag" id="lista-acervo"></div>
+    </div>
+    
+    <div class="coluna-meio">
+       <button class="btn-mover-massa" onclick="moverMassaParaDireita()" title="Mover Músicas Selecionadas para a Pasta">➡️</button>
+    </div>
+ 
+    <div class="coluna-org col-alvo">
+      <div class="header-org">
+        <h3>🎯 PASTA SELECIONADA:</h3>
+        <div class="grupo-form" style="position: relative;">
+          <input type="text" class="input-busca-pasta-alvo" id="busca-pasta-alvo" placeholder="Digite o nome da Pasta (Ex: BASE)..." autocomplete="off" onkeyup="verificarAutocompleteOrg(event)">
+          <div class="caixa-sugestoes" id="sugestoes-busca-pasta-alvo"></div>
+        </div>
+      </div>
+      <div class="area-drag" id="lista-pasta" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <div style="text-align: center; color: #94a3b8; margin-top: 40px; font-style: italic;">Busque uma pasta acima.<br>Depois arraste músicas da esquerda para cá!</div>
+      </div>
+    </div>
+  </div>
+ 
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxOXROEaatndvE2qbDo4L_vdt3v4y_7alRSDpmiQT-wl7-57oNITx89YBny44ImRsFXkQ/exec";
+
+    function alternarTela(t) {
+      if (t === 'editor') {
+        document.getElementById('tela-editor').style.display = 'flex'; document.getElementById('tela-organizador').style.display = 'none';
+        document.getElementById('aba-editor').classList.add('ativa'); document.getElementById('aba-org').classList.remove('ativa');
+        document.getElementById('botoes-editor').style.display = 'flex'; document.getElementById('area-regua').style.display = 'flex'; document.getElementById('botoes-org').style.display = 'none';
+      } else {
+        document.getElementById('tela-editor').style.display = 'none'; document.getElementById('tela-organizador').style.display = 'flex';
+        document.getElementById('aba-editor').classList.remove('ativa'); document.getElementById('aba-org').classList.add('ativa');
+        document.getElementById('botoes-editor').style.display = 'none'; document.getElementById('area-regua').style.display = 'none'; document.getElementById('botoes-org').style.display = 'flex';
+        prepararTelaOrganizador();
+      }
+    }
+
+    let repertorioCompleto = []; let linhaEmEdicao = null; let basesDeDados = { artista: [], estilos: [], tom: [] }; let ordensSalvas = {}; 
+    function normalizarTexto(texto) { if (!texto) return ""; return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+    function ajustarLarguraTablet(valor) { document.getElementById('valorLargura').innerText = valor + "px"; document.getElementById('preview').style.width = valor + "px"; localStorage.setItem('memoriaLarguraTablet', valor); }
+
+    // CARREGA DA API
+    window.onload = async function() {
+      let larguraSalva = localStorage.getItem('memoriaLarguraTablet');
+      if (larguraSalva) { document.getElementById('sliderLargura').value = larguraSalva; ajustarLarguraTablet(larguraSalva); }
+      recarregarRepertorio();
+    };
+
+    async function recarregarRepertorio() { 
+      try {
+        let res = await fetch(API_URL);
+        let dados = await res.json();
+        ordensSalvas = dados.ordens;
+        prepararDados(dados.musicas);
+      } catch(e) {
+        alert("Erro! O Bastidores precisa de internet para puxar os dados.");
+      }
+    }
+    
+    function prepararDados(musicas) {
+      repertorioCompleto = musicas; 
+      let setPastas = new Set(); let setCantores = new Set(); let setTons = new Set();
+      musicas.forEach(m => {
+        if(m.estilos) m.estilos.split(',').forEach(e => { let val = e.trim(); if(val) setPastas.add(val); });
+        if(m.artista) m.artista.split(',').forEach(a => { let val = a.trim(); if(val) setCantores.add(val); });
+        if(m.tom) setTons.add(m.tom.trim());
+      });
+      
+      basesDeDados.artista = Array.from(setCantores).sort(); 
+      let tonsLimpos = Array.from(setTons).filter(t => t.toUpperCase() !== 'PAUSA' && t !== '').sort();
+      tonsLimpos.unshift('PAUSA'); basesDeDados.tom = tonsLimpos;
+
+      let cantoresNorm = basesDeDados.artista.map(c => normalizarTexto(c));
+      let estilosFinais = Array.from(setPastas).filter(p => {
+        let pNorm = normalizarTexto(p); let isCantor = cantoresNorm.includes(pNorm); 
+        return !isCantor && pNorm !== 'cantores' && pNorm !== 'base' && pNorm !== '';
+      }).sort();
+      
+      estilosFinais.unshift('BASE'); basesDeDados.estilos = [...new Set(estilosFinais)];
+      if(document.getElementById('aba-org').classList.contains('ativa')) prepararTelaOrganizador();
+    }
+
+    function buscarMusicaParaEditar(e) {
+      let input = document.getElementById('busca-geral'); let caixa = document.getElementById('sugestoes-busca'); let termo = normalizarTexto(input.value);
+      if (e.key === 'Enter') { e.preventDefault(); let prim = caixa.querySelector('.sugestao-item'); if (prim) prim.click(); return; }
+      if (termo.length === 0) { caixa.style.display = 'none'; return; }
+      
+      let res = repertorioCompleto.filter(m => normalizarTexto(m.titulo).includes(termo) || normalizarTexto(m.artista).includes(termo));
+      res.sort((a, b) => {
+        let tA = normalizarTexto(a.titulo); let tB = normalizarTexto(b.titulo);
+        let cA = tA.startsWith(termo) ? -1 : 1; let cB = tB.startsWith(termo) ? -1 : 1;
+        if(cA !== cB) return cA - cB; return tA.localeCompare(tB);
+      });
+
+      if (res.length > 0) {
+        let html = ''; res.slice(0, 15).forEach((r, i) => {
+          let txt = `${r.titulo} <span style="color:#64748b; font-size:11px;">- ${r.artista}</span>`;
+          html += `<div class="sugestao-item ${(i === 0) ? 'selecionado' : ''}" onclick="carregarMusicaNoEditor(${r.linhaPlanilha})">${txt}</div>`;
+        });
+        caixa.innerHTML = html; caixa.style.display = 'block';
+      } else { caixa.style.display = 'none'; }
+    }
+
+    function carregarMusicaNoEditor(linha) {
+      let musica = repertorioCompleto.find(m => m.linhaPlanilha === linha); if(!musica) return;
+      document.getElementById('titulo').value = musica.titulo; document.getElementById('tom').value = musica.tom || '';
+      document.getElementById('artista').value = musica.artista || ''; document.getElementById('estilos').value = musica.estilos || '';
+      document.getElementById('letra').value = musica.letra; atualizarPreview();
+      document.getElementById('busca-geral').value = ''; document.getElementById('sugestoes-busca').style.display = 'none';
+      linhaEmEdicao = linha; 
+      let btnSalvar = document.getElementById('btnSalvar'); btnSalvar.innerText = "🔄 ATUALIZAR MÚSICA"; btnSalvar.classList.add('modo-edicao');
+      let btnExcluir = document.getElementById('btnExcluir'); btnExcluir.disabled = false; btnExcluir.classList.add('ativo');
+    }
+
+    function limparCamposEditor() {
+      document.getElementById('titulo').value = ''; document.getElementById('artista').value = ''; document.getElementById('estilos').value = ''; document.getElementById('tom').value = ''; document.getElementById('letra').value = ''; atualizarPreview();
+      linhaEmEdicao = null; 
+      let btnSalvar = document.getElementById('btnSalvar'); btnSalvar.innerText = "➕ SALVAR MÚSICA"; btnSalvar.classList.remove('modo-edicao'); btnSalvar.disabled = false;
+      let btnExcluir = document.getElementById('btnExcluir'); btnExcluir.disabled = true; btnExcluir.classList.remove('ativo');
+    }
+
+    function cancelarEdicao() { if(confirm("Descartar alterações e limpar os campos?")) { limparCamposEditor(); } }
+
+    function sucessoOperacao(mensagemResposta) {
+      limparCamposEditor(); 
+      let msgBox = document.getElementById('msgSucesso'); msgBox.innerText = `✅ ${mensagemResposta}`; msgBox.style.display = 'block';
+      setTimeout(() => { msgBox.style.display = 'none'; }, 4000); 
+      recarregarRepertorio();
+    }
+
+    // ENVIA PARA A API SALVAR
+    async function salvarOuAtualizar() {
+      const musica = {
+        linhaPlanilha: linhaEmEdicao, 
+        titulo: document.getElementById('titulo').value.trim(), 
+        artista: document.getElementById('artista').value.trim(),
+        estilos: document.getElementById('estilos').value.trim(), 
+        tom: document.getElementById('tom').value.replace(/,/g, '').trim(), 
+        letra: document.getElementById('letra').value
+      };
+      
+      if(!musica.titulo) { alert("Chefe, toda música precisa de um Título!"); return; }
+      if(musica.artista.endsWith(',')) musica.artista = musica.artista.slice(0, -1).trim(); 
+      if(musica.estilos.endsWith(',')) musica.estilos = musica.estilos.slice(0, -1).trim();
+      
+      const btn = document.getElementById('btnSalvar'); 
+      btn.innerText = "⏳ PROCESSANDO..."; btn.disabled = true;
+
+      const payload = { acao: (linhaEmEdicao === null) ? "salvarNova" : "atualizar", musica: musica };
+
+      try {
+        let res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+        let result = await res.json();
+        if(result.sucesso) sucessoOperacao(result.mensagem);
+        else throw new Error(result.mensagem);
+      } catch(erro) {
+        alert("❌ Erro ao processar:\n" + erro.message);
+        btn.innerText = (linhaEmEdicao === null) ? "➕ SALVAR MÚSICA" : "🔄 ATUALIZAR MÚSICA"; btn.disabled = false;
+      }
+    }
+
+    // ENVIA PARA A API APAGAR
+    async function deletarMusicaAtual() {
+      if (linhaEmEdicao === null) return;
+      if(confirm(`ATENÇÃO!\nTem certeza que deseja EXCLUIR a música "${document.getElementById('titulo').value}" definitivamente?`)) {
+        const btn = document.getElementById('btnExcluir'); btn.innerText = "⏳ APAGANDO..."; btn.disabled = true;
+        
+        try {
+          let res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({acao: "excluir", linha: linhaEmEdicao}) });
+          let result = await res.json();
+          if(result.sucesso) sucessoOperacao(result.mensagem);
+          else throw new Error(result.mensagem);
+        } catch(erro) {
+          alert("❌ Erro ao apagar:\n" + erro.message);
+          btn.innerText = "🗑️ EXCLUIR"; btn.disabled = false;
+        }
+      }
+    }
+
+    function verificarAutocomplete(e, tipo) {
+      let input = document.getElementById(tipo); let caixa = document.getElementById('sugestoes-' + tipo); let termo = "";
+      if (tipo === 'tom') { termo = normalizarTexto(input.value.trim()); } else { let partes = input.value.substring(0, input.selectionStart).split(','); termo = normalizarTexto(partes[partes.length - 1].trim()); }
+      if (e.key === 'Enter') { e.preventDefault(); let prim = caixa.querySelector('.sugestao-item'); if (prim) selecionarSugestao(tipo, prim.innerText); return; }
+      if (termo.length === 0) { caixa.style.display = 'none'; return; }
+      let res = basesDeDados[tipo].filter(item => normalizarTexto(item).includes(termo));
+      if (res.length > 0) {
+        let html = ''; res.forEach((r, i) => { html += `<div class="sugestao-item ${(i === 0) ? 'selecionado' : ''}" onclick="selecionarSugestao('${tipo}', '${r}')">${r}</div>`; });
+        caixa.innerHTML = html; caixa.style.display = 'block';
+      } else { caixa.style.display = 'none'; }
+    }
+    function selecionarSugestao(tipo, valor) {
+      let input = document.getElementById(tipo);
+      if (tipo === 'tom') { input.value = valor; } else {
+        let partes = input.value.split(','); partes.pop(); partes.push(" " + valor); 
+        let txt = partes.join(',').trim(); if(txt.startsWith(',')) txt = txt.substring(1).trim(); input.value = txt + ", "; 
+      }
+      document.getElementById('sugestoes-' + tipo).style.display = 'none'; input.focus(); 
+    }
+    document.addEventListener('click', function(e) { if(!e.target.matches('input[type="text"]')) { document.querySelectorAll('.caixa-sugestoes').forEach(c => c.style.display = 'none'); document.getElementById('sugestoes-busca').style.display = 'none'; } });
+
+    function expandirSelecaoParaLinhasInteiras(textarea) {
+      let inicio = textarea.selectionStart; let fim = textarea.selectionEnd; let texto = textarea.value;
+      let inicioLinha = texto.lastIndexOf('\n', inicio - 1) + 1;
+      let fimLinha = texto.indexOf('\n', fim); if (fimLinha === -1) fimLinha = texto.length;
+      return { inicioLinha, fimLinha, trecho: texto.substring(inicioLinha, fimLinha) };
+    }
+    function toggleFormatoLinhas(antes, depois) {
+      const textarea = document.getElementById('letra'); const { inicioLinha, fimLinha, trecho } = expandirSelecaoParaLinhasInteiras(textarea);
+      let linhas = trecho.split('\n'); let todas = true;
+      linhas.forEach(linha => { let l = linha.trim(); if (l.length > 0) { if (!l.startsWith(antes) || !l.endsWith(depois)) todas = false; } });
+      let novas = linhas.map(linha => {
+        let trim = linha.trim(); if (trim.length === 0) return linha; 
+        let espInicio = linha.match(/^\s*/)[0]; let espFim = linha.match(/\s*$/)[0]; let miolo = trim;
+        if (todas) { if (miolo.startsWith(antes) && miolo.endsWith(depois)) { miolo = miolo.substring(antes.length, miolo.length - depois.length); } } 
+        else { if (!miolo.startsWith(antes) || !miolo.endsWith(depois)) { miolo = antes + miolo + depois; } }
+        return espInicio + miolo + espFim;
+      });
+      let novoTrecho = novas.join('\n'); textarea.value = textarea.value.substring(0, inicioLinha) + novoTrecho + textarea.value.substring(fimLinha);
+      atualizarPreview(); textarea.focus(); textarea.setSelectionRange(inicioLinha, inicioLinha + novoTrecho.length);
+    }
+    function toggleCifraLinhas() {
+      const textarea = document.getElementById('letra'); const { inicioLinha, fimLinha, trecho } = expandirSelecaoParaLinhasInteiras(textarea);
+      let linhas = trecho.split('\n'); let todas = true;
+      linhas.forEach(linha => { if (linha.trim().length > 0 && !linha.trim().toLowerCase().startsWith('<c>')) todas = false; });
+      let novas = linhas.map(linha => {
+        let trim = linha.trim(); if (trim.length === 0) return linha;
+        let espInicio = linha.match(/^\s*/)[0]; let espFim = linha.match(/\s*$/)[0]; let miolo = trim;
+        if (todas) { if (miolo.toLowerCase().startsWith('<c>')) miolo = miolo.substring(3); } else { if (!miolo.toLowerCase().startsWith('<c>')) miolo = '<c>' + miolo; }
+        return espInicio + miolo + espFim;
+      });
+      let novoTrecho = novas.join('\n'); textarea.value = textarea.value.substring(0, inicioLinha) + novoTrecho + textarea.value.substring(fimLinha);
+      atualizarPreview(); textarea.focus(); textarea.setSelectionRange(inicioLinha, inicioLinha + novoTrecho.length);
+    }
+    function atualizarPreview() { document.getElementById('preview').innerHTML = formatarLetra(document.getElementById('letra').value); }
+    function formatarLetra(textoRaw) {
+      if (!textoRaw) return 'Sua música formatada aparecerá aqui...';
+      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>').replace(/\[([\s\S]*?)\]/g, '<em>$1</em>').replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
+      let linhas = texto.split('\n'); let htmlFinal = '';
+      linhas.forEach(linha => {
+        let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, '');
+        let linhaSemTags = linha.replace(/<[^>]*>/g, '').trim(); let contemLetras = /[HKLNOPQRTUVWXYZ]/i.test(linhaSemTags);
+        let ehCifra = forcadoCifra || (linhaSemTags.length > 0 && linhaSemTags.length < 60 && !contemLetras);
+        if (ehCifra) htmlFinal += '<span class="chord-preview">' + linha + '</span><br>'; else htmlFinal += linha + '<br>';
+      });
+      return htmlFinal;
+    }
+
+    let dragItemAtivo = null; let ultimoItemHover = null; let placeholder = document.createElement('div'); placeholder.className = 'drag-placeholder';
+    function gerarIdImortal(musica) { return encodeURIComponent(musica.titulo + "|||" + (musica.artista || '')); }
+    function prepararTelaOrganizador() { renderizarAcervoOrg(repertorioCompleto); }
+    function renderizarAcervoOrg(lista) {
+      let html = '';
+      lista.forEach(m => {
+        let ehPausa = (m.tom && m.tom.toUpperCase() === 'PAUSA'); let classeExtra = ehPausa ? 'tipo-pausa' : ''; let myId = gerarIdImortal(m);
+        html += `<div class="item-drag ${classeExtra}" draggable="true" data-id="${myId}" ondragstart="dragStart(event, 'acervo')" ondragend="dragEnd(event)">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="checkbox" class="chk-massa" value="${myId}" style="transform: scale(1.3); cursor: pointer; margin-right: 5px;" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" title="Marcar para enviar em lote">
+              <span>${m.titulo}</span>
+            </div>
+            <span class="cantor">${ehPausa ? '' : m.artista}</span>
+          </div>`;
+      });
+      document.getElementById('lista-acervo').innerHTML = html;
+    }
+    function filtrarAcervoOrg() {
+      let termo = normalizarTexto(document.getElementById('busca-org').value);
+      let res = repertorioCompleto.filter(m => normalizarTexto(m.titulo).includes(termo) || normalizarTexto(m.artista).includes(termo));
+      if (termo !== '') {
+        res.sort((a, b) => { let tA = normalizarTexto(a.titulo); let tB = normalizarTexto(b.titulo); let cA = tA.startsWith(termo) ? -1 : 1; let cB = tB.startsWith(termo) ? -1 : 1; if(cA !== cB) return cA - cB; return tA.localeCompare(tB); });
+      }
+      renderizarAcervoOrg(res);
+    }
+    function verificarAutocompleteOrg(e) {
+      let input = document.getElementById('busca-pasta-alvo'); let caixa = document.getElementById('sugestoes-busca-pasta-alvo'); let termo = normalizarTexto(input.value.trim());
+      if (e.key === 'Enter') { e.preventDefault(); let prim = caixa.querySelector('.sugestao-item'); if (prim) selecionarSugestaoOrg(prim.innerText); return; }
+      if (termo.length === 0) { caixa.style.display = 'none'; return; }
+      let combo = [...basesDeDados.estilos, ...basesDeDados.artista];
+      let res = combo.filter(item => normalizarTexto(item).includes(termo));
+      res = [...new Set(res)]; 
+      if (res.length > 0) {
+        let html = ''; res.slice(0, 15).forEach((r, i) => { html += `<div class="sugestao-item ${(i === 0) ? 'selecionado' : ''}" onclick="selecionarSugestaoOrg('${r}')">${r}</div>`; });
+        caixa.innerHTML = html; caixa.style.display = 'block';
+      } else { caixa.style.display = 'none'; }
+    }
+    function selecionarSugestaoOrg(valor) { document.getElementById('busca-pasta-alvo').value = valor; document.getElementById('sugestoes-busca-pasta-alvo').style.display = 'none'; carregarVisualPasta(); }
+    function desenharItemDaDireita(m, isMedley = false) {
+      let ehPausa = (m.tom && m.tom.toUpperCase() === 'PAUSA'); let classeExtra = ehPausa ? 'tipo-pausa' : ''; if (isMedley) classeExtra += ' is-medley';
+      let myId = gerarIdImortal(m); let btnMedley = ehPausa ? '' : `<span class="btn-link-medley" title="Ligar ao Medley" onclick="toggleMedley(this)">🔗</span>`;
+      return `<div class="item-drag ${classeExtra}" draggable="true" data-id="${myId}" ondragstart="dragStart(event, 'alvo')" ondragend="dragEnd(event)">
+          <span>${m.titulo}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${btnMedley}
+            <span class="cantor">${ehPausa ? '' : 'Mover ↕️'}</span>
+            <span class="btn-remover-medley" title="Remover desta pasta" onclick="this.parentElement.parentElement.remove()">X</span>
+          </div>
+        </div>`;
+    }
+    function toggleMedley(btn) { let item = btn.closest('.item-drag'); item.classList.toggle('is-medley'); }
+    function carregarVisualPasta() {
+      let pastaSelecionada = document.getElementById('busca-pasta-alvo').value; let areaAlvo = document.getElementById('lista-pasta');
+      if(pastaSelecionada === '') { areaAlvo.innerHTML = '<div style="text-align: center; color: #94a3b8; margin-top: 40px; font-style: italic;">Busque uma pasta acima.<br>Depois arraste músicas da esquerda para cá!</div>'; return; }
+      let musicasDaPasta = repertorioCompleto.filter(m => { let estMatch = m.estilos && m.estilos.toUpperCase().includes(pastaSelecionada.toUpperCase()); let artMatch = m.artista && m.artista.toUpperCase().includes(pastaSelecionada.toUpperCase()); return estMatch || artMatch; });
+      let ordemNoCofre = ordensSalvas[pastaSelecionada]; let html = '';
+      if (ordemNoCofre) {
+        let idsSalvos = ordemNoCofre.split(','); let idsJaRenderizados = new Set();
+        idsSalvos.forEach(idStr => {
+          let str = idStr.trim(); let isMedley = str.startsWith('+'); if (isMedley) str = str.substring(1);
+          try {
+            let decodificado = decodeURIComponent(str).split("|||"); let t = decodificado[0]; let a = decodificado[1] || '';
+            let m = repertorioCompleto.find(mus => mus.titulo === t && (mus.artista || '') === a);
+            if (m) { html += desenharItemDaDireita(m, isMedley); idsJaRenderizados.add(m.linhaPlanilha); }
+          } catch(e) {}
+        });
+        musicasDaPasta.forEach(m => { if (!idsJaRenderizados.has(m.linhaPlanilha)) { html += desenharItemDaDireita(m); } });
+      } else { musicasDaPasta.forEach(m => { html += desenharItemDaDireita(m); }); }
+      areaAlvo.innerHTML = html;
+    }
+    function moverMassaParaDireita() {
+      let pastaSelecionada = document.getElementById('busca-pasta-alvo').value;
+      if(pastaSelecionada === '') { alert('Selecione uma pasta alvo (na direita) primeiro!'); return; }
+      let checkboxes = document.querySelectorAll('#lista-acervo .chk-massa:checked');
+      if (checkboxes.length === 0) { alert('Selecione pelo menos uma música!'); return; }
+      let musicasParaMover = [];
+      checkboxes.forEach(chk => {
+        let myId = chk.value; let decodificado = decodeURIComponent(myId).split("|||");
+        let m = repertorioCompleto.find(mus => mus.titulo === decodificado[0] && (mus.artista || '') === (decodificado[1] || ''));
+        if (m) musicasParaMover.push(m); chk.checked = false; 
+      });
+      musicasParaMover.sort((a, b) => normalizarTexto(a.titulo).localeCompare(normalizarTexto(b.titulo)));
+      let areaAlvo = document.getElementById('lista-pasta');
+      if (areaAlvo.innerHTML.includes('Busque uma pasta acima')) { areaAlvo.innerHTML = ''; }
+      musicasParaMover.forEach(m => { let divInvisivel = document.createElement('div'); divInvisivel.innerHTML = desenharItemDaDireita(m); areaAlvo.appendChild(divInvisivel.firstElementChild); });
+      areaAlvo.scrollTop = areaAlvo.scrollHeight; 
+    }
+
+    // ENVIA ORDEM PARA A API
+    async function salvarOrdemDaPastaAtual() {
+      let nomeDaPasta = document.getElementById('busca-pasta-alvo').value;
+      if (nomeDaPasta === '') { alert('Nenhuma pasta selecionada!'); return; }
+      let itensNaDireita = document.querySelectorAll('#lista-pasta .item-drag'); let ordemDosIds = [];
+      itensNaDireita.forEach(item => { let idStr = item.getAttribute('data-id'); if (item.classList.contains('is-medley')) { idStr = "+" + idStr; } ordemDosIds.push(idStr); });
+      if (ordemDosIds.length === 0) { alert('A pasta está vazia!'); return; }
+      
+      let btn = document.querySelector('.btn-salvar-ordem'); let textoOriginal = btn.innerHTML; btn.innerHTML = '⏳ SALVANDO...'; btn.disabled = true;
+
+      try {
+        let res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({acao: "salvarOrdem", nomePasta: nomeDaPasta, listaIds: ordemDosIds}) });
+        let result = await res.json();
+        if(result.sucesso) {
+            let msgBox = document.getElementById('msgSucesso'); msgBox.innerText = `✅ ${result.mensagem}`; msgBox.style.display = 'block'; setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+            btn.innerHTML = textoOriginal; btn.disabled = false; recarregarRepertorio();
+        } else throw new Error(result.mensagem);
+      } catch(erro) {
+        alert("❌ Erro ao salvar ordem:\n" + erro.message); btn.innerHTML = textoOriginal; btn.disabled = false;
+      }
+    }
+
+    function dragStart(event, origem) { dragItemAtivo = event.target; event.dataTransfer.setData('origem', origem); event.dataTransfer.effectAllowed = 'move'; setTimeout(() => { dragItemAtivo.classList.add('dragging'); }, 0); }
+    function dragEnd(event) { if (dragItemAtivo) dragItemAtivo.classList.remove('dragging'); if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder); ultimoItemHover = null; }
+    function allowDrop(event) {
+      event.preventDefault(); let areaAlvo = document.getElementById('lista-pasta'); let retangulo = areaAlvo.getBoundingClientRect();
+      if (event.clientY - retangulo.top < 50) { areaAlvo.scrollTop -= 15; } else if (retangulo.bottom - event.clientY < 50) { areaAlvo.scrollTop += 15; }
+      let itens = [...areaAlvo.querySelectorAll('.item-drag:not(.dragging)')];
+      let proximoItem = itens.find(item => { let caixa = item.getBoundingClientRect(); return event.clientY < (caixa.top + caixa.height / 2); });
+      if (proximoItem !== ultimoItemHover) { ultimoItemHover = proximoItem; if (proximoItem) { areaAlvo.insertBefore(placeholder, proximoItem); } else { areaAlvo.appendChild(placeholder); } }
+    }
+    function drop(event) {
+      event.preventDefault(); ultimoItemHover = null; let areaAlvo = document.getElementById('lista-pasta'); let origem = event.dataTransfer.getData('origem');
+      if (dragItemAtivo) dragItemAtivo.classList.remove('dragging'); let novoElemento;
+      if (origem === 'acervo') {
+        let myId = dragItemAtivo.getAttribute('data-id'); let decodificado = decodeURIComponent(myId).split("|||");
+        let m = repertorioCompleto.find(mus => mus.titulo === decodificado[0] && (mus.artista || '') === (decodificado[1] || ''));
+        let divInvisivel = document.createElement('div'); divInvisivel.innerHTML = desenharItemDaDireita(m); novoElemento = divInvisivel.firstElementChild;
+      } else { novoElemento = dragItemAtivo; }
+      if (placeholder.parentNode) { areaAlvo.insertBefore(novoElemento, placeholder); placeholder.parentNode.removeChild(placeholder); } else { areaAlvo.appendChild(novoElemento); }
+    }
+  </script>
+</body>
+</html>
