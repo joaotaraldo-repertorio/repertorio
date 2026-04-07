@@ -287,15 +287,31 @@
     function renderizarItemMusica(musica, isBusca = false, isMedleySub = false, isMedleyMain = false) {
       let ehPausa = (musica.tom && musica.tom.toUpperCase() === 'PAUSA');
       if (ehPausa) { return `<div class="separator-pausa">${musica.titulo}</div>`; }
+      
       if (!isBusca || emBusca) { sequenciaAtual.push(musica.idReal); }
+      
       let classes = 'song-item';
       if(musica.tocada) classes += ' played';
       if(musica.ativaNaTela && !isBusca) classes += ' active';
-      if (!isBusca) { if (isMedleyMain) classes += ' medley-main'; else if (isMedleySub) classes += ' medley-sub'; }
+      
+      if (!isBusca) { 
+        if (isMedleyMain) classes += ' medley-main'; 
+        else if (isMedleySub) classes += ' medley-sub'; 
+      }
+      
       if (pastaAtual === 'BASE' && !isBusca && musica.estilos && musica.estilos.toUpperCase().includes('SERTANEJO')) {
         if (!musica.tocada && !musica.ativaNaTela) { classes += ' sertanejo-highlight'; }
       }
-      return `<div class="${classes}" onclick="mostrarLetra(${musica.idReal}, ${isBusca})"><div class="song-title">${musica.titulo}</div></div>`;
+
+      // --- NOVA LÓGICA DO CARIMBO "V" PARA VIOLÃO ---
+      let carimboViolao = '';
+      if (musica.estilos && normalizarTexto(musica.estilos).includes('violao')) {
+        // Cria um carimbinho vermelho escuro com a letra V branca
+        carimboViolao = `<span style="background: var(--wine-red); color: white; font-size: 12px; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: text-bottom; line-height: 1;" title="Apenas Violão">V</span>`;
+      }
+      // ----------------------------------------------
+
+      return `<div class="${classes}" onclick="mostrarLetra(${musica.idReal}, ${isBusca})"><div class="song-title">${musica.titulo}${carimboViolao}</div></div>`;
     }
 
     function renderizarMenuVisaoPasta() {
