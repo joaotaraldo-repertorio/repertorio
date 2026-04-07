@@ -1,4 +1,4 @@
-const CACHE_NAME = 'repertorio-v2'; // <--- A MÁGICA ESTÁ AQUI (Versão 2)
+const CACHE_NAME = 'repertorio-v3'; // <--- A MÁGICA ESTÁ AQUI (Versão 2)
 const urlsToCache = [
   './',
   './index.html',
