@@ -27,6 +27,9 @@
     
     .controle-largura { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #475569; margin-right: 15px;}
     .controle-largura input[type="range"] { width: 100px; cursor: pointer; }
+    
+    /* ESTILO PARA ESCONDER AS SETINHAS DO INPUT NUMBER EM ALGUNS NAVEGADORES PARA FICAR MAIS LIMPO */
+    .controle-largura input[type="number"]::-webkit-inner-spin-button, .controle-largura input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
  
     .mensagem { font-weight: bold; color: #10b981; display: none; position: absolute; right: 20px; top: 70px; background: white; padding: 12px 25px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 1000; border-left: 4px solid #10b981;}
  
@@ -113,8 +116,11 @@
     
     <div class="grupo-botoes-topo">
       <div class="controle-largura" id="area-regua" title="Ajuste do Tablet">
-        Largura: <input type="range" id="sliderLargura" min="600" max="1400" value="900" oninput="ajustarLarguraTablet(this.value)"> <span id="valorLargura">900px</span>
+        Largura: <input type="range" id="sliderLargura" min="400" max="1400" value="900" oninput="ajustarLarguraTablet(this.value)"> 
+        
+        <input type="number" id="valorLarguraInput" value="900" oninput="ajustarLarguraTablet(this.value)" style="width: 55px; margin-left: 5px; padding: 2px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; color: #0ea5e9; text-align: center; outline: none; background: white;"> px
       </div>
+      
       <div id="botoes-editor" style="display: flex; gap: 8px;">
         <button class="btn-acao btn-cancelar" onclick="cancelarEdicao()">🧹 LIMPAR</button>
         <button class="btn-acao btn-excluir" id="btnExcluir" onclick="deletarMusicaAtual()" disabled>🗑️ EXCLUIR</button>
@@ -204,9 +210,18 @@
 
     let repertorioCompleto = []; let linhaEmEdicao = null; let basesDeDados = { artista: [], estilos: [], tom: [] }; let ordensSalvas = {}; 
     function normalizarTexto(texto) { if (!texto) return ""; return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
-    function ajustarLarguraTablet(valor) { document.getElementById('valorLargura').innerText = valor + "px"; document.getElementById('preview').style.width = valor + "px"; localStorage.setItem('memoriaLarguraTablet', valor); }
+    
+    // --- NOVO AJUSTE DA LARGURA (BARRA + INPUT SINCRONIZADOS) ---
+    function ajustarLarguraTablet(valor) { 
+      document.getElementById('sliderLargura').value = valor; 
+      let inputNum = document.getElementById('valorLarguraInput');
+      if (inputNum && inputNum.value !== valor) inputNum.value = valor;
+      
+      document.getElementById('preview').style.width = valor + "px"; 
+      localStorage.setItem('memoriaLarguraTablet', valor); 
+    }
+    // -----------------------------------------------------------
 
-    // CARREGA DA API
     window.onload = async function() {
       let larguraSalva = localStorage.getItem('memoriaLarguraTablet');
       if (larguraSalva) { document.getElementById('sliderLargura').value = larguraSalva; ajustarLarguraTablet(larguraSalva); }
