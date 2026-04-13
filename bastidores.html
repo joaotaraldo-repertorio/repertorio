@@ -28,7 +28,6 @@
     .controle-largura { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #475569; margin-right: 15px;}
     .controle-largura input[type="range"] { width: 100px; cursor: pointer; }
     
-    /* ESTILO PARA ESCONDER AS SETINHAS DO INPUT NUMBER EM ALGUNS NAVEGADORES PARA FICAR MAIS LIMPO */
     .controle-largura input[type="number"]::-webkit-inner-spin-button, .controle-largura input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
  
     .mensagem { font-weight: bold; color: #10b981; display: none; position: absolute; right: 20px; top: 70px; background: white; padding: 12px 25px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 1000; border-left: 4px solid #10b981;}
@@ -117,7 +116,6 @@
     <div class="grupo-botoes-topo">
       <div class="controle-largura" id="area-regua" title="Ajuste do Tablet">
         Largura: <input type="range" id="sliderLargura" min="400" max="1400" value="900" oninput="ajustarLarguraTablet(this.value)"> 
-        
         <input type="number" id="valorLarguraInput" value="900" oninput="ajustarLarguraTablet(this.value)" style="width: 55px; margin-left: 5px; padding: 2px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: bold; color: #0ea5e9; text-align: center; outline: none; background: white;"> px
       </div>
       
@@ -148,11 +146,11 @@
     <div class="editor-container">
       <div class="lado-esquerdo">
         <div class="barra-ferramentas">
-          <button class="btn-format" onclick="toggleFormatoLinhas('(', ')')" title="Negrito (Liga/Desliga)">( B ) Negrito</button>
-          <button class="btn-format" onclick="toggleFormatoLinhas('[', ']')" title="Itálico (Liga/Desliga)">[ I ] Itálico</button>
-          <button class="btn-format btn-red" onclick="toggleFormatoLinhas('“', '”')" title="Vermelho (Liga/Desliga)">" Cor " Vermelho</button>
+          <button class="btn-format" onclick="toggleFormatoPalavra('(', ')')" title="Negrito na Seleção">( B ) Negrito</button>
+          <button class="btn-format" onclick="toggleFormatoPalavra('[', ']')" title="Itálico na Seleção">[ I ] Itálico</button>
+          <button class="btn-format btn-red" onclick="toggleFormatoPalavra('“', '”')" title="Vermelho na Seleção">" Cor " Vermelho</button>
           <div style="width: 2px; background: #cbd5e1; margin: 0 5px; height: 20px;"></div>
-          <button class="btn-format" onclick="toggleCifraLinhas()" title="Cifra (Liga/Desliga)">&lt;c&gt; Cifra</button>
+          <button class="btn-format" onclick="toggleCifraLinhas()" title="Cifra na Linha Toda">&lt;c&gt; Cifra</button>
         </div>
         <textarea id="letra" placeholder="Cole a letra e as cifras brutas da internet aqui..." oninput="atualizarPreview()"></textarea>
       </div>
@@ -211,7 +209,6 @@
     let repertorioCompleto = []; let linhaEmEdicao = null; let basesDeDados = { artista: [], estilos: [], tom: [] }; let ordensSalvas = {}; 
     function normalizarTexto(texto) { if (!texto) return ""; return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
     
-    // --- NOVO AJUSTE DA LARGURA (BARRA + INPUT SINCRONIZADOS) ---
     function ajustarLarguraTablet(valor) { 
       document.getElementById('sliderLargura').value = valor; 
       let inputNum = document.getElementById('valorLarguraInput');
@@ -220,7 +217,6 @@
       document.getElementById('preview').style.width = valor + "px"; 
       localStorage.setItem('memoriaLarguraTablet', valor); 
     }
-    // -----------------------------------------------------------
 
     window.onload = async function() {
       let larguraSalva = localStorage.getItem('memoriaLarguraTablet');
@@ -310,7 +306,6 @@
       recarregarRepertorio();
     }
 
-    // ENVIA PARA A API SALVAR
     async function salvarOuAtualizar() {
       const musica = {
         linhaPlanilha: linhaEmEdicao, 
@@ -341,7 +336,6 @@
       }
     }
 
-    // ENVIA PARA A API APAGAR
     async function deletarMusicaAtual() {
       if (linhaEmEdicao === null) return;
       if(confirm(`ATENÇÃO!\nTem certeza que deseja EXCLUIR a música "${document.getElementById('titulo').value}" definitivamente?`)) {
@@ -380,26 +374,45 @@
     }
     document.addEventListener('click', function(e) { if(!e.target.matches('input[type="text"]')) { document.querySelectorAll('.caixa-sugestoes').forEach(c => c.style.display = 'none'); document.getElementById('sugestoes-busca').style.display = 'none'; } });
 
+    // --- NOVA FUNÇÃO: FORMATA SÓ A SELEÇÃO (PALAVRA OU FRASE) ---
+    function toggleFormatoPalavra(antes, depois) {
+      const textarea = document.getElementById('letra');
+      let inicio = textarea.selectionStart;
+      let fim = textarea.selectionEnd;
+      let texto = textarea.value;
+
+      if (inicio === fim) {
+        alert("Chefe, selecione a palavra ou a frase que deseja formatar primeiro!");
+        textarea.focus();
+        return;
+      }
+
+      let trecho = texto.substring(inicio, fim);
+      let novoTrecho = "";
+
+      // Se já tem a marcação (ex: já está em negrito), ele retira
+      if (trecho.startsWith(antes) && trecho.endsWith(depois)) {
+        novoTrecho = trecho.substring(antes.length, trecho.length - depois.length);
+      } else {
+        // Se não tem, ele adiciona as marcações
+        novoTrecho = antes + trecho + depois;
+      }
+
+      textarea.value = texto.substring(0, inicio) + novoTrecho + texto.substring(fim);
+      atualizarPreview();
+      textarea.focus();
+      textarea.setSelectionRange(inicio, inicio + novoTrecho.length);
+    }
+    // -------------------------------------------------------------
+
+    // O BOTÃO DE CIFRA CONTINUA PEGANDO A LINHA INTEIRA
     function expandirSelecaoParaLinhasInteiras(textarea) {
       let inicio = textarea.selectionStart; let fim = textarea.selectionEnd; let texto = textarea.value;
       let inicioLinha = texto.lastIndexOf('\n', inicio - 1) + 1;
       let fimLinha = texto.indexOf('\n', fim); if (fimLinha === -1) fimLinha = texto.length;
       return { inicioLinha, fimLinha, trecho: texto.substring(inicioLinha, fimLinha) };
     }
-    function toggleFormatoLinhas(antes, depois) {
-      const textarea = document.getElementById('letra'); const { inicioLinha, fimLinha, trecho } = expandirSelecaoParaLinhasInteiras(textarea);
-      let linhas = trecho.split('\n'); let todas = true;
-      linhas.forEach(linha => { let l = linha.trim(); if (l.length > 0) { if (!l.startsWith(antes) || !l.endsWith(depois)) todas = false; } });
-      let novas = linhas.map(linha => {
-        let trim = linha.trim(); if (trim.length === 0) return linha; 
-        let espInicio = linha.match(/^\s*/)[0]; let espFim = linha.match(/\s*$/)[0]; let miolo = trim;
-        if (todas) { if (miolo.startsWith(antes) && miolo.endsWith(depois)) { miolo = miolo.substring(antes.length, miolo.length - depois.length); } } 
-        else { if (!miolo.startsWith(antes) || !miolo.endsWith(depois)) { miolo = antes + miolo + depois; } }
-        return espInicio + miolo + espFim;
-      });
-      let novoTrecho = novas.join('\n'); textarea.value = textarea.value.substring(0, inicioLinha) + novoTrecho + textarea.value.substring(fimLinha);
-      atualizarPreview(); textarea.focus(); textarea.setSelectionRange(inicioLinha, inicioLinha + novoTrecho.length);
-    }
+    
     function toggleCifraLinhas() {
       const textarea = document.getElementById('letra'); const { inicioLinha, fimLinha, trecho } = expandirSelecaoParaLinhasInteiras(textarea);
       let linhas = trecho.split('\n'); let todas = true;
@@ -413,6 +426,7 @@
       let novoTrecho = novas.join('\n'); textarea.value = textarea.value.substring(0, inicioLinha) + novoTrecho + textarea.value.substring(fimLinha);
       atualizarPreview(); textarea.focus(); textarea.setSelectionRange(inicioLinha, inicioLinha + novoTrecho.length);
     }
+
     function atualizarPreview() { document.getElementById('preview').innerHTML = formatarLetra(document.getElementById('letra').value); }
     function formatarLetra(textoRaw) {
       if (!textoRaw) return 'Sua música formatada aparecerá aqui...';
@@ -515,7 +529,6 @@
       areaAlvo.scrollTop = areaAlvo.scrollHeight; 
     }
 
-    // ENVIA ORDEM PARA A API
     async function salvarOrdemDaPastaAtual() {
       let nomeDaPasta = document.getElementById('busca-pasta-alvo').value;
       if (nomeDaPasta === '') { alert('Nenhuma pasta selecionada!'); return; }
