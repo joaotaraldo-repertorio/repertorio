@@ -206,6 +206,7 @@
 
     let repertorioCompleto = []; let pastasDisponiveis = []; let cantoresDisponiveis = []; 
     let pastaAtual = ''; let subPastaAtual = ''; let contadorTocadas = 0; let emBusca = false; let memoriaMenu = { pasta: '', subPasta: '', scroll: 0 };
+    let musicasTocadasSalvas = new Set();
     let sequenciaAtual = []; let ordensSalvas = {}; let musicaAtualId = null; let offsetTom = 0; 
     const notasSustenido = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; const notasBemol = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -393,7 +394,10 @@
 
     function formatarLetra(textoRaw) {
       if (!textoRaw) return '';
-      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>').replace(/\[([\s\S]*?)\]/g, '<em>$1</em>').replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
+      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>')
+                          .replace(/\{cor:([^}]+)\}([\s\S]*?)\{\/cor\}/g, '<span style="color: $1;">$2</span>')
+                          .replace(/\[([\s\S]*?)\]/g, '<em>$1</em>')
+                          .replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
       let linhas = texto.split('\n'); let htmlFinal = '';
       linhas.forEach(linha => {
         let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, ''); let linhaSemTags = linha.replace(/<[^>]*>/g, '').trim();
@@ -420,9 +424,14 @@
       passosDeZoom = 0; document.documentElement.style.setProperty('--tamanho-letra', '20px'); document.documentElement.style.setProperty('--tamanho-cifra', '19px');
       
       repertorioCompleto.forEach(m => m.ativaNaTela = false); musicaSelecionada.ativaNaTela = true;
-      if(!musicaSelecionada.tocada) { musicaSelecionada.tocada = true; contadorTocadas++; document.getElementById('contador-tocadas').innerText = contadorTocadas; }
-      document.getElementById('titulo-tela').innerText = musicaSelecionada.titulo;
-      document.getElementById('letra-tela').innerHTML = formatarLetra(musicaSelecionada.letra); document.getElementById('letra-tela').scrollTop = 0;
+      if(!musicaSelecionada.tocada) { 
+        musicaSelecionada.tocada = true; 
+        // Salva essa música na memória do tablet
+        musicasTocadasSalvas.add(musicaSelecionada.linhaPlanilha);
+        contadorTocadas = musicasTocadasSalvas.size;
+        document.getElementById('contador-tocadas').innerText = contadorTocadas; 
+        localStorage.setItem('memoriaTocadas_v1', JSON.stringify(Array.from(musicasTocadasSalvas)));
+      }
       if(veioDaBusca) {
         document.getElementById('input-busca-musica').value = ''; emBusca = false; pastaAtual = memoriaMenu.pasta; subPastaAtual = memoriaMenu.subPasta;
         renderizarMenuVisaoPasta(); setTimeout(() => { document.getElementById('lista-menu').scrollTop = memoriaMenu.scroll; }, 10);
@@ -451,7 +460,14 @@
         }
     }
 
-    function zerarContador() { contadorTocadas = 0; document.getElementById('contador-tocadas').innerText = contadorTocadas; repertorioCompleto.forEach(m => m.tocada = false); renderizarMenuVisaoPasta(); }
+    function zerarContador() { 
+      musicasTocadasSalvas.clear();
+      localStorage.removeItem('memoriaTocadas_v1');
+      contadorTocadas = 0; 
+      document.getElementById('contador-tocadas').innerText = contadorTocadas; 
+      repertorioCompleto.forEach(m => m.tocada = false); 
+      renderizarMenuVisaoPasta(); 
+    }
 
     document.addEventListener('keydown', function(e) {
       if (document.activeElement.tagName === 'INPUT') return;
