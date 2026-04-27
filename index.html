@@ -256,8 +256,28 @@
     };
 
     function iniciarAplicativo(musicas) {
-      repertorioCompleto = musicas.map((m, index) => { m.idReal = index; return m; });
+      // 1. Puxa a memória da gaveta do tablet
+      let salvos = localStorage.getItem('memoriaTocadas_v1');
+      if(salvos) {
+        musicasTocadasSalvas = new Set(JSON.parse(salvos));
+        contadorTocadas = musicasTocadasSalvas.size;
+      } else {
+        contadorTocadas = 0;
+      }
+
+      // 2. Prepara o repertório e marca as que já foram tocadas
+      repertorioCompleto = musicas.map((m, index) => { 
+        m.idReal = index; 
+        // Se a música estiver salva na memória, ela volta pintada de tocada
+        if (musicasTocadasSalvas.has(m.linhaPlanilha)) m.tocada = true;
+        return m; 
+      });
+      
+      // 3. Atualiza os contadores na tela
       document.getElementById('total-musicas').innerText = repertorioCompleto.length;
+      document.getElementById('contador-tocadas').innerText = contadorTocadas;
+      
+      // 4. Daqui para baixo é o seu código original de separar as pastas
       let setPastas = new Set(); let setCantores = new Set();
       repertorioCompleto.forEach(m => {
         if(m.estilos) m.estilos.split(',').forEach(e => setPastas.add(e.trim()));
