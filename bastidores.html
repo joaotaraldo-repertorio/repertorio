@@ -148,7 +148,10 @@
         <div class="barra-ferramentas">
           <button class="btn-format" onclick="toggleFormatoPalavra('(', ')')" title="Negrito na Seleção">( B ) Negrito</button>
           <button class="btn-format" onclick="toggleFormatoPalavra('[', ']')" title="Itálico na Seleção">[ I ] Itálico</button>
-          <button class="btn-format btn-red" onclick="toggleFormatoPalavra('“', '”')" title="Vermelho na Seleção">" Cor " Vermelho</button>
+        <div style="display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 5px; background: white; margin-right: 5px;">
+  <input type="color" id="cor-personalizada" value="#ff0000" style="border: none; background: none; width: 25px; height: 25px; cursor: pointer; padding: 0;" title="Escolher cor">
+  <button class="btn-format" style="border: none; margin: 0; padding-left: 5px;" onclick="aplicarCorPersonalizada()" title="Pintar Seleção">🎨 Pintar</button>
+</div>
           <div style="width: 2px; background: #cbd5e1; margin: 0 5px; height: 20px;"></div>
           <button class="btn-format" onclick="toggleCifraLinhas()" title="Cifra na Linha Toda">&lt;c&gt; Cifra</button>
         </div>
@@ -403,6 +406,29 @@
       textarea.focus();
       textarea.setSelectionRange(inicio, inicio + novoTrecho.length);
     }
+
+    function aplicarCorPersonalizada() {
+      const textarea = document.getElementById('letra');
+      let inicio = textarea.selectionStart;
+      let fim = textarea.selectionEnd;
+      let texto = textarea.value;
+
+      if (inicio === fim) {
+        alert("Chefe, selecione a palavra ou a frase que deseja pintar primeiro!");
+        textarea.focus();
+        return;
+      }
+
+      let cor = document.getElementById('cor-personalizada').value;
+      let trecho = texto.substring(inicio, fim);
+      // Cria a nossa nova etiqueta: {cor:#HEX}texto{/cor}
+      let novoTrecho = `{cor:${cor}}${trecho}{/cor}`;
+
+      textarea.value = texto.substring(0, inicio) + novoTrecho + texto.substring(fim);
+      atualizarPreview();
+      textarea.focus();
+      textarea.setSelectionRange(inicio, inicio + novoTrecho.length);
+    }
     // -------------------------------------------------------------
 
     // O BOTÃO DE CIFRA CONTINUA PEGANDO A LINHA INTEIRA
@@ -430,7 +456,10 @@
     function atualizarPreview() { document.getElementById('preview').innerHTML = formatarLetra(document.getElementById('letra').value); }
     function formatarLetra(textoRaw) {
       if (!textoRaw) return 'Sua música formatada aparecerá aqui...';
-      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>').replace(/\[([\s\S]*?)\]/g, '<em>$1</em>').replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
+     let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>')
+                          .replace(/\{cor:([^}]+)\}([\s\S]*?)\{\/cor\}/g, '<span style="color: $1;">$2</span>')
+                          .replace(/\[([\s\S]*?)\]/g, '<em>$1</em>')
+                          .replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
       let linhas = texto.split('\n'); let htmlFinal = '';
       linhas.forEach(linha => {
         let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, '');
