@@ -409,11 +409,9 @@
       setTimeout(() => { let idAlvo = cantor ? 'pasta-' + cantor.replace(/\s+/g, '-') : 'pasta-' + pastaPrincipal.replace(/\s+/g, '-'); let el = document.getElementById(idAlvo); if(el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
     }
 
-    // LEITOR DE CORES CONSERTADO
     function formatarLetra(textoRaw) {
       if (!textoRaw) return '';
       let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>')
-                          .replace(/\{cor:([^}]+)\}([\s\S]*?)\{\/cor\}/g, '<span style="color: $1;">$2</span>')
                           .replace(/\[([\s\S]*?)\]/g, '<em>$1</em>')
                           .replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
                           
@@ -469,15 +467,6 @@
             if (deltaX > 0) navegarSwipe(-1); 
         }
     }, {passive: true});
-
-    function navegarSwipe(direcao) {
-        if (musicaAtualId === null || sequenciaAtual.length === 0) return;
-        let indexAtual = sequenciaAtual.indexOf(musicaAtualId);
-        if (indexAtual !== -1) {
-            let novoIndex = indexAtual + direcao;
-            if (novoIndex >= 0 && novoIndex < sequenciaAtual.length) { mostrarLetra(sequenciaAtual[novoIndex], false); }
-        }
-    }
 
     function zerarContador() { 
       musicasTocadasSalvas.clear();
