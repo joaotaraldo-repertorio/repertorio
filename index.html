@@ -118,7 +118,7 @@
   </style>
 </head>
 <body>
- 
+  
   <div class="sidebar glass" id="painel-sidebar">
     <div class="stats-panel">
       <div class="stat-box" ondblclick="zerarContador()" style="cursor: pointer;" title="Duplo clique para zerar!">SELECIONADAS: <div class="stat-value" id="contador-tocadas">0</div></div>
@@ -206,8 +206,8 @@
 
     let repertorioCompleto = []; let pastasDisponiveis = []; let cantoresDisponiveis = []; 
     let pastaAtual = ''; let subPastaAtual = ''; let contadorTocadas = 0; let emBusca = false; let memoriaMenu = { pasta: '', subPasta: '', scroll: 0 };
-    let musicasTocadasSalvas = new Set();
     let sequenciaAtual = []; let ordensSalvas = {}; let musicaAtualId = null; let offsetTom = 0; 
+    let musicasTocadasSalvas = new Set(); // Nossa memória de longo prazo
     const notasSustenido = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; const notasBemol = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
     function transporNota(nota, offset) {
@@ -268,16 +268,13 @@
       // 2. Prepara o repertório e marca as que já foram tocadas
       repertorioCompleto = musicas.map((m, index) => { 
         m.idReal = index; 
-        // Se a música estiver salva na memória, ela volta pintada de tocada
         if (musicasTocadasSalvas.has(m.linhaPlanilha)) m.tocada = true;
         return m; 
       });
       
-      // 3. Atualiza os contadores na tela
       document.getElementById('total-musicas').innerText = repertorioCompleto.length;
       document.getElementById('contador-tocadas').innerText = contadorTocadas;
       
-      // 4. Daqui para baixo é o seu código original de separar as pastas
       let setPastas = new Set(); let setCantores = new Set();
       repertorioCompleto.forEach(m => {
         if(m.estilos) m.estilos.split(',').forEach(e => setPastas.add(e.trim()));
@@ -412,12 +409,14 @@
       setTimeout(() => { let idAlvo = cantor ? 'pasta-' + cantor.replace(/\s+/g, '-') : 'pasta-' + pastaPrincipal.replace(/\s+/g, '-'); let el = document.getElementById(idAlvo); if(el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
     }
 
+    // LEITOR DE CORES CONSERTADO
     function formatarLetra(textoRaw) {
       if (!textoRaw) return '';
       let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>')
                           .replace(/\{cor:([^}]+)\}([\s\S]*?)\{\/cor\}/g, '<span style="color: $1;">$2</span>')
                           .replace(/\[([\s\S]*?)\]/g, '<em>$1</em>')
                           .replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
+                          
       let linhas = texto.split('\n'); let htmlFinal = '';
       linhas.forEach(linha => {
         let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, ''); let linhaSemTags = linha.replace(/<[^>]*>/g, '').trim();
@@ -440,18 +439,18 @@
       }
       let tomLimpo = (musicaSelecionada.tom || '-').replace(/,/g, '').trim(); document.getElementById('visor-tom').innerText = tomLimpo || '-';
       
-      // RESET DO ZOOM PARA OS NOVOS TAMANHOS PADRÃO
       passosDeZoom = 0; document.documentElement.style.setProperty('--tamanho-letra', '20px'); document.documentElement.style.setProperty('--tamanho-cifra', '19px');
       
       repertorioCompleto.forEach(m => m.ativaNaTela = false); musicaSelecionada.ativaNaTela = true;
       if(!musicaSelecionada.tocada) { 
         musicaSelecionada.tocada = true; 
-        // Salva essa música na memória do tablet
         musicasTocadasSalvas.add(musicaSelecionada.linhaPlanilha);
         contadorTocadas = musicasTocadasSalvas.size;
         document.getElementById('contador-tocadas').innerText = contadorTocadas; 
         localStorage.setItem('memoriaTocadas_v1', JSON.stringify(Array.from(musicasTocadasSalvas)));
       }
+      document.getElementById('titulo-tela').innerText = musicaSelecionada.titulo;
+      document.getElementById('letra-tela').innerHTML = formatarLetra(musicaSelecionada.letra); document.getElementById('letra-tela').scrollTop = 0;
       if(veioDaBusca) {
         document.getElementById('input-busca-musica').value = ''; emBusca = false; pastaAtual = memoriaMenu.pasta; subPastaAtual = memoriaMenu.subPasta;
         renderizarMenuVisaoPasta(); setTimeout(() => { document.getElementById('lista-menu').scrollTop = memoriaMenu.scroll; }, 10);
