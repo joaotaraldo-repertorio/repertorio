@@ -103,7 +103,7 @@
   </style>
 </head>
 <body>
-  
+ 
   <div class="cabecalho">
     <h1 class="titulo-principal">
       <span id="titulo-pagina">⚙️ BASTIDORES</span>
@@ -374,6 +374,7 @@
     }
     document.addEventListener('click', function(e) { if(!e.target.matches('input[type="text"]')) { document.querySelectorAll('.caixa-sugestoes').forEach(c => c.style.display = 'none'); document.getElementById('sugestoes-busca').style.display = 'none'; } });
 
+    // --- NOVA FUNÇÃO: FORMATA SÓ A SELEÇÃO (PALAVRA OU FRASE) ---
     function toggleFormatoPalavra(antes, depois) {
       const textarea = document.getElementById('letra');
       let inicio = textarea.selectionStart;
@@ -389,9 +390,11 @@
       let trecho = texto.substring(inicio, fim);
       let novoTrecho = "";
 
+      // Se já tem a marcação (ex: já está em negrito), ele retira
       if (trecho.startsWith(antes) && trecho.endsWith(depois)) {
         novoTrecho = trecho.substring(antes.length, trecho.length - depois.length);
       } else {
+        // Se não tem, ele adiciona as marcações
         novoTrecho = antes + trecho + depois;
       }
 
@@ -400,7 +403,9 @@
       textarea.focus();
       textarea.setSelectionRange(inicio, inicio + novoTrecho.length);
     }
+    // -------------------------------------------------------------
 
+    // O BOTÃO DE CIFRA CONTINUA PEGANDO A LINHA INTEIRA
     function expandirSelecaoParaLinhasInteiras(textarea) {
       let inicio = textarea.selectionStart; let fim = textarea.selectionEnd; let texto = textarea.value;
       let inicioLinha = texto.lastIndexOf('\n', inicio - 1) + 1;
@@ -423,13 +428,9 @@
     }
 
     function atualizarPreview() { document.getElementById('preview').innerHTML = formatarLetra(document.getElementById('letra').value); }
-    
     function formatarLetra(textoRaw) {
       if (!textoRaw) return 'Sua música formatada aparecerá aqui...';
-      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>')
-                          .replace(/\[([\s\S]*?)\]/g, '<em>$1</em>')
-                          .replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
-                          
+      let texto = textoRaw.replace(/\(([\s\S]*?)\)/g, '<strong>$1</strong>').replace(/\[([\s\S]*?)\]/g, '<em>$1</em>').replace(/["“”]([\s\S]*?)["“”]/g, '<span style="color: var(--highlight);">$1</span>');
       let linhas = texto.split('\n'); let htmlFinal = '';
       linhas.forEach(linha => {
         let forcadoCifra = linha.toLowerCase().includes('<c>'); linha = linha.replace(/<c>|<C>/g, '');
